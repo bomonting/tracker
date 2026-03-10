@@ -190,8 +190,8 @@
   .war-vs-divider { width:2px; background:#0a0a0a; height:100%; flex-shrink:0; }
   .war-vs-mid { background:#0d0d0d; padding:0 14px; display:flex; align-items:center; gap:6px; flex-shrink:0; border-left:1px solid #1a1a1a; border-right:1px solid #1a1a1a; }
   .war-vs-mid span { font-size:11px; color:#333; letter-spacing:2px; font-family:'Share Tech Mono',monospace; }
-  .war-main { display:flex; gap:12px; flex:1; min-height:0; }
-  .war-list-col { flex:1; overflow-y:auto; }
+  .war-main { display:flex; gap:12px; align-items:flex-start; }
+  .war-list-col { flex:2; }
   .war-team-col { flex:2; display:flex; gap:12px; }
   .war-team-box { flex:1; background:#0d0d0d; border-radius:6px; padding:14px; overflow-y:auto; display:flex; flex-direction:column; }
   .war-team-box.green { border:1px solid #1e3d2a; }
@@ -312,8 +312,7 @@
     .family-members { max-height: none; }
 
     /* War: hide team panels on mobile, list takes full width */
-    .war-main { flex-direction: column; }
-    .war-team-col { display: none; }
+    .war-team-box { display: none; }
     .war-list-col { flex: 1; }
 
     /* Bottom nav */
@@ -492,7 +491,6 @@
 <header>
   <div class="logo">O<span style="text-decoration:underline;text-underline-offset:6px;text-decoration-thickness:2px">MERT</span>A&nbsp;<span style="font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:400;letter-spacing:3px;color:rgba(255,255,255,0.45);vertical-align:middle">tracker</span></div>
   <div class="header-right">
-    <span id="status-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3a9e5f;margin-right:4px;animation:blink 1.4s ease-in-out infinite"></span><span id="status-text">Connecting...</span>
     <span id="last-update"></span>
     <div class="header-user" style="margin-left:12px">
       <span class="header-username" id="header-username"></span>
@@ -586,7 +584,13 @@
 
   <!-- RIGHT: Events -->
   <div class="right-panel">
-    <div class="feed-header">EVENTS</div>
+    <div class="feed-header" style="display:flex;align-items:center;justify-content:space-between">
+      EVENTS
+      <span style="display:flex;align-items:center;gap:5px">
+        <span id="status-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#3a9e5f;animation:blink 1.4s ease-in-out infinite"></span>
+        <span id="status-text" style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;letter-spacing:1px;color:#3a9e5f">Connecting...</span>
+      </span>
+    </div>
 
     <div id="feed-list">
       <div class="feed-empty">Waiting for events...</div>
@@ -989,57 +993,27 @@
         </div>`;
       }).join('');
 
-    const hasTeams = warGreen.size > 0 || warRed.size > 0;
-    el.innerHTML = `<div style="padding-bottom:${hasTeams ? '70px' : '0'}">
-      ${famList || '<div class="empty-state">No families found</div>'}
+    el.innerHTML = `<div class="war-main">
+      <div class="war-list-col">${famList || '<div class="empty-state">No families found</div>'}</div>
+      <div class="war-team-box green">
+        <div class="war-team-header">
+          <span class="war-team-title">⬤ Green</span>
+          <button class="war-reset-btn" onclick="warGreen.clear();renderWar()">Clear</button>
+        </div>
+        ${renderWarTeamBox(warGreen, 'green')}
+      </div>
+      <div class="war-team-box red">
+        <div class="war-team-header">
+          <span class="war-team-title">⬤ Red</span>
+          <button class="war-reset-btn" onclick="warRed.clear();renderWar()">Clear</button>
+        </div>
+        ${renderWarTeamBox(warRed, 'red')}
+      </div>
     </div>`;
-    updateWarBar();
   }
 
-  // ── WAR COMPARISON BAR ────────────────────────────────────────────────────
   function updateWarBar() {
-    const bar = document.getElementById('war-bar');
-    if (currentView !== 'war' || (warGreen.size === 0 && warRed.size === 0)) {
-      bar.style.display = 'none';
-      return;
-    }
-    const calcTot = (teamSet) => {
-      let t = { gf:0, fl:0, cd:0, brug:0, chief:0, lc:0 };
-      teamSet.forEach(fn => {
-        const s = warFamStats(fn);
-        t.gf+=s.gf; t.fl+=s.fl; t.cd+=s.cd;
-        t.brug+=s.brug; t.chief+=s.chief; t.lc+=s.lc;
-      });
-      return { ...t, score: warFamScore(t) };
-    };
-    const g = calcTot(warGreen);
-    const r = calcTot(warRed);
-    const RANKS = [['GF','gf'],['FL','fl'],['CD','cd'],['Brug','brug'],['Chief','chief'],['LC','lc']];
-
-    const sideHTML = (tot, other, color) => {
-      const sc = color === 'green' ? '#3a9e5f' : '#c0392b';
-      const osc = color === 'green' ? '#c0392b' : '#3a9e5f';
-      const label = color === 'green' ? 'GREEN' : 'RED';
-      const clearFn = color === 'green' ? 'warGreen.clear()' : 'warRed.clear()';
-      const ranks = RANKS.map(([lbl, key]) => {
-        const v = tot[key], ov = other[key];
-        const c = v > ov ? sc : v < ov ? osc : '#444';
-        return `<span class="war-rank-item"><b style="color:${c}">${v}</b><span>${lbl}</span></span>`;
-      }).join('');
-      return `<div class="war-side">
-        <span class="war-side-label" style="color:${sc}">${label}</span>
-        <span class="war-side-score" style="color:${sc}">${tot.score}</span>
-        <div class="war-side-ranks">${ranks}</div>
-        <button class="war-side-clear" onclick="${clearFn};renderWar()">Clear</button>
-      </div>`;
-    };
-
-    bar.style.display = 'flex';
-    bar.innerHTML = `
-      ${sideHTML(g, r, 'green')}
-      <div class="war-divider"></div>
-      ${sideHTML(r, g, 'red')}
-    `;
+    document.getElementById('war-bar').style.display = 'none';
   }
 
   function renderFamilies(users) {
