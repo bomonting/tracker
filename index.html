@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Omerta Tracker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='%23e50914'>▶</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Bebas+Neue&family=Share+Tech+Mono&family=Oswald:wght@300;400;500;600&family=Exo+2:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:   #0a0a0c;
+    --bg2:  #111114;
+    --bg3:  #18181d;
+    --border: #252530;
+    --red:  #e50914;
+    --gold: #e8b84b;
+    --text: #d0cfc8;
+    --muted:#4a4a5a;
+    --cyan: #4fc3f7;
+    --purple:#ce93d8;
+    --green:#81c784;
+    --rose: #e57373;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; overflow-x:hidden; }
+
+  /* ── HEADER ── */
+  header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 24px; background:#000;
+    border-bottom:2px solid var(--red);
+    position:sticky; top:0; z-index:100;
+  }
+  .logo { font-family:'Exo 2',sans-serif; font-size:28px; font-weight:700; letter-spacing:3px; color:var(--red); }
+  .header-right { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); }
+  .live-dot { width:7px; height:7px; border-radius:50%; background:#3a9e5f; animation:pulse 2s infinite; display:inline-block; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+  #status-text { color:var(--red); letter-spacing:1px; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* ── LAYOUT ── */
+  .layout { display:grid; grid-template-columns:1fr 310px; height:calc(100vh - 54px); }
+
+  /* ── LEFT PANEL ── */
+  .left-panel { overflow-y:auto; padding:14px 18px; }
+  .left-panel::-webkit-scrollbar { width:4px; }
+  .left-panel::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  /* ── TOOLBAR ── */
+  .toolbar { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .search-box {
+    flex:1; max-width:320px;
+    background:var(--bg3); border:1px solid var(--border);
+    border-radius:4px; padding:7px 12px;
+    color:var(--text); font-family:'DM Sans',sans-serif; font-size:13px; outline:none;
+  }
+  .search-box:focus { border-color:var(--red); }
+  .search-box::placeholder { color:var(--muted); }
+  .filter-btn {
+    padding:5px 14px; border:1px solid var(--border); border-radius:3px;
+    background:none; color:var(--muted);
+    font-family:'DM Sans',sans-serif; font-size:12px; cursor:pointer;
+    text-transform:uppercase; letter-spacing:1px; transition:all .15s;
+  }
+  .filter-btn.active { border-color:var(--red); color:var(--red); background:rgba(229,9,20,0.08); }
+  .reset-btn {
+    padding:5px 12px; border:1px solid #2a2a2a; border-radius:3px;
+    background:none; color:#444;
+    font-family:'DM Sans',sans-serif; font-size:12px; cursor:pointer; transition:all .15s;
+  }
+  .reset-btn:hover { border-color:var(--rose); color:var(--rose); }
+
+  /* ── FILTER ROW ── */
+  .filter-row { display:flex; gap:10px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+
+  /* ── DROPDOWNS ── */
+  .select-wrap { position:relative; }
+  .select-wrap select {
+    background:var(--bg3); border:1px solid var(--border); border-radius:4px;
+    color:var(--text); font-family:'DM Sans',sans-serif; font-size:12px;
+    padding:5px 28px 5px 10px; cursor:pointer; outline:none; appearance:none;
+    min-width:140px; transition:border-color .15s;
+  }
+  .select-wrap select:focus { border-color:var(--red); }
+  .select-wrap::after {
+    content:'▾'; position:absolute; right:9px; top:50%; transform:translateY(-50%);
+    color:var(--muted); pointer-events:none; font-size:11px;
+  }
+
+  /* ── PLATING FILTER PILLS ── */
+  .plating-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+  .plating-pills { display:flex; gap:5px; flex-wrap:wrap; }
+  .plating-pill {
+    padding:3px 10px; border:1px solid var(--border); border-radius:12px;
+    background:none; color:var(--muted);
+    font-family:'DM Sans',sans-serif; font-size:11px; cursor:pointer; transition:all .15s;
+  }
+  .plating-pill.active { border-color:var(--red) !important; color:var(--red) !important; background:rgba(229,9,20,0.1) !important; }
+  .city-pills { display:flex; gap:5px; flex-wrap:wrap; }
+  .city-pill {
+    padding:3px 10px; border:1px solid var(--border); border-radius:12px;
+    background:none; color:var(--muted);
+    font-family:'DM Sans',sans-serif; font-size:11px; cursor:pointer; transition:all .15s; font-weight:500;
+  }
+  .city-pill.active { border-color:currentColor !important; opacity:1 !important; filter:brightness(1.3); }
+  .city-pill:not([data-city=""]){ opacity:0.45; }
+  .city-pill:not([data-city=""]):hover { opacity:0.75; }
+  .city-pill:not([data-city=""]).active { opacity:1; background:var(--_bg, none) !important; }
+  .city-pill[data-city=""].active { border-color:var(--red) !important; color:var(--red) !important; background:rgba(229,9,20,0.1) !important; }
+
+  /* ── STATS BAR ── */
+  .stats-bar { display:flex; gap:16px; margin-bottom:12px; align-items:center; flex-wrap:wrap; }
+  .stats-bar span { font-size:10px; color:#444; letter-spacing:0.5px; text-transform:uppercase; }
+  .stats-bar strong { color:#888; font-size:11px; font-family:'Share Tech Mono',monospace; font-weight:500; margin-right:3px; }
+
+  /* ── FAMILY CARDS ── */
+  .families-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+  .family-card {
+    background:var(--bg2); border:1px solid var(--border); border-radius:6px;
+    overflow:hidden; transition:border-color .15s;
+  }
+  .family-card:hover { border-color:#3a3a4a; }
+  .family-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 13px; border-bottom:1px solid var(--border); background:var(--bg3);
+  }
+  .family-name { font-family:'Oswald',sans-serif; font-size:15px; font-weight:500; color:#fff; letter-spacing:1px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .family-count { font-size:10px; color:var(--muted); white-space:nowrap; margin-left:8px; }
+  .family-plating-bar {
+    display:flex; gap:6px; padding:4px 12px;
+    border-bottom:1px solid var(--border); font-size:9px; color:var(--muted);
+    background:rgba(0,0,0,0.3); flex-wrap:nowrap; overflow:hidden;
+  }
+  .plating-stat { display:flex; align-items:center; gap:3px; }
+  .family-members { padding:4px 0; max-height:220px; overflow-y:auto; }
+  .family-members::-webkit-scrollbar { width:3px; }
+  .family-members::-webkit-scrollbar-thumb { background:var(--border); }
+  .member-row {
+    display:grid;
+    grid-template-columns: 14px 1fr 46px 70px;
+    align-items:center; padding:5px 13px; font-size:13px;
+    transition:background .1s; gap:6px;
+  }
+  .member-row:hover { background:rgba(255,255,255,0.02); }
+  .member-row > span:first-child { user-select:none; -webkit-user-select:none; }
+  .member-name { color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .member-title { display:flex; justify-content:center; user-select:none; -webkit-user-select:none; }
+  .member-rank { color:var(--muted); font-size:10px; white-space:nowrap; text-align:right; user-select:none; -webkit-user-select:none; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { color:var(--muted); text-align:center; padding:60px 20px; font-size:12px; font-style:italic; }
+
+  /* ── RIGHT PANEL (EVENTS) ── */
+  .right-panel { background:var(--bg2); border-left:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+  .feed-header {
+    padding:12px 16px; border-bottom:1px solid var(--border);
+    font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:4px; color:#fff;
+  }
+
+  #feed-list { overflow-y:auto; flex:1; padding:6px; }
+  #feed-list::-webkit-scrollbar { width:3px; }
+  #feed-list::-webkit-scrollbar-thumb { background:var(--border); }
+  .feed-item {
+    padding:7px 10px; margin-bottom:4px; border-radius:4px;
+    border-left:3px solid var(--border); background:rgba(255,255,255,0.02);
+    line-height:1.7; font-size:12px;
+  }
+  .feed-item.lost-plating  { border-color:#e8822a; background:rgba(232,130,42,0.08); }
+  .feed-item.family-left   { border-color:#e57373; background:rgba(229,115,115,0.08); }
+  .feed-item.family-joined { border-color:#81c784; background:rgba(129,199,132,0.08); }
+  .feed-item.family-moved  { border-color:#81c784; background:rgba(129,199,132,0.08); }
+  .feed-item.family-died   { border-color:#888; background:rgba(100,100,100,0.1); }
+  .feed-item.family-died   { border-color:#888; background:rgba(100,100,100,0.1); }
+  .feed-time { color:var(--muted); font-size:10px; float:right; margin-left:6px; }
+  .feed-name { color:#fff; font-weight:bold; }
+  .feed-sub  { color:#888; }
+  .feed-empty { color:var(--muted); text-align:center; padding:30px 0; font-size:11px; font-style:italic; }
+
+  /* ── WAR SCENARIO ── */
+  .war-layout { display:flex; gap:12px; flex-direction:column; }
+  .war-vs-bar { display:flex; align-items:center; gap:0; height:36px; border-radius:6px; overflow:hidden; border:1px solid #1a1a1a; flex-shrink:0; }
+  .war-vs-green { background:linear-gradient(90deg,#1a3d2b,#1f4d33); display:flex; align-items:center; padding:0 14px; transition:flex 0.6s cubic-bezier(.4,0,.2,1); min-width:80px; }
+  .war-vs-red   { background:linear-gradient(90deg,#3d1a1a,#4d1f1f); display:flex; align-items:center; justify-content:flex-end; padding:0 14px; transition:flex 0.6s cubic-bezier(.4,0,.2,1); min-width:80px; }
+  .war-vs-score { font-size:16px; font-weight:800; letter-spacing:1px; font-family:'Share Tech Mono',monospace; }
+  .war-vs-green .war-vs-score { color:#3a9e5f; }
+  .war-vs-red   .war-vs-score { color:#c0392b; }
+  .war-vs-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; margin:0 10px; opacity:0.5; }
+  .war-vs-green .war-vs-label { color:#3a9e5f; }
+  .war-vs-red   .war-vs-label { color:#c0392b; }
+  .war-vs-divider { width:2px; background:#0a0a0a; height:100%; flex-shrink:0; }
+  .war-vs-mid { background:#0d0d0d; padding:0 14px; display:flex; align-items:center; gap:6px; flex-shrink:0; border-left:1px solid #1a1a1a; border-right:1px solid #1a1a1a; }
+  .war-vs-mid span { font-size:11px; color:#333; letter-spacing:2px; font-family:'Share Tech Mono',monospace; }
+  .war-main { display:flex; gap:12px; flex:1; min-height:0; }
+  .war-list-col { flex:1; overflow-y:auto; }
+  .war-team-col { flex:2; display:flex; gap:12px; }
+  .war-team-box { flex:1; background:#0d0d0d; border-radius:6px; padding:14px; overflow-y:auto; display:flex; flex-direction:column; }
+  .war-team-box.green { border:1px solid #1e3d2a; }
+  .war-team-box.red   { border:1px solid #3d1e1e; }
+  .war-team-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding-bottom:10px; }
+  .war-team-box.green .war-team-header { border-bottom:1px solid #1e3d2a; }
+  .war-team-box.red   .war-team-header { border-bottom:1px solid #3d1e1e; }
+  .war-team-title { font-size:10px; letter-spacing:3px; text-transform:uppercase; font-weight:700; }
+  .war-team-box.green .war-team-title { color:#3a9e5f; }
+  .war-team-box.red   .war-team-title { color:#c0392b; }
+  .war-reset-btn { font-size:9px; color:#2a2a2a; background:none; border:1px solid #1e1e1e; border-radius:3px; padding:2px 8px; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:all 0.15s; }
+  .war-reset-btn:hover { color:#555; border-color:#333; }
+  .war-row { display:flex; align-items:center; gap:8px; padding:7px 10px; background:#111; border:1px solid #161616; border-radius:5px; margin-bottom:3px; user-select:none; transition:all 0.15s; }
+  .war-row:hover { border-color:#252525; }
+  .war-row.team-green { border-color:#2a5c3a; background:rgba(58,158,95,0.06); }
+  .war-row.team-red   { border-color:#5c2a2a; background:rgba(192,57,43,0.06); }
+  .war-fam-name { font-size:12px; font-weight:600; color:#ccc; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .war-city-badge { font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:1px; padding:2px 5px; border-radius:3px; border:1px solid; white-space:nowrap; flex-shrink:0; }
+  .war-stats { font-size:10px; color:#444; display:flex; gap:6px; white-space:nowrap; }
+  .war-stats b { color:#666; }
+  .war-pts { font-size:10px; color:#2e2e2e; font-family:'Share Tech Mono',monospace; }
+  .war-pts b { color:#444; }
+  .war-btns { display:flex; gap:3px; flex-shrink:0; }
+  .war-btn { width:20px; height:18px; border-radius:3px; border:none; font-size:9px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:800; opacity:0.3; transition:opacity 0.15s; }
+  .war-btn.green { background:#3a9e5f; color:#fff; }
+  .war-btn.red   { background:#c0392b; color:#fff; }
+  .war-btn.green.active, .war-btn.green:hover { opacity:1; }
+  .war-btn.red.active,   .war-btn.red:hover   { opacity:1; }
+  .war-entries { flex:1; overflow-y:auto; }
+  .war-team-entry { display:flex; align-items:center; padding:8px 6px; border-bottom:1px solid #141414; gap:8px; }
+  .war-team-entry:last-child { border-bottom:none; }
+  .wte-info { flex:1; min-width:0; }
+  .wte-top { display:flex; align-items:center; gap:6px; margin-bottom:3px; }
+  .wte-name { font-size:13px; color:#ddd; font-weight:700; }
+  .wte-stats { font-size:10px; color:#555; margin-top:1px; }
+  .wte-pts { font-size:11px; color:#555; font-family:'Share Tech Mono',monospace; margin-left:auto; white-space:nowrap; }
+  .wte-pts b { color:#777; font-size:13px; }
+  .wte-remove { color:#2a2a2a; cursor:pointer; font-size:18px; line-height:1; padding:0 3px; transition:color 0.15s; flex-shrink:0; }
+  .wte-remove:hover { color:#666; }
+  .war-totals-box { margin-bottom:10px; padding:10px 12px; border-radius:5px; flex-shrink:0; }
+  .war-team-box.green .war-totals-box { background:#0a1f13; border:1px solid #1a3326; }
+  .war-team-box.red   .war-totals-box { background:#1f0a0a; border:1px solid #331a1a; }
+  .war-total-score { font-size:20px; font-weight:800; font-family:'Share Tech Mono',monospace; }
+  .war-team-box.green .war-total-score { color:#3a9e5f; }
+  .war-team-box.red   .war-total-score { color:#c0392b; }
+  .war-total-score span { font-size:11px; opacity:0.5; letter-spacing:2px; margin-left:4px; vertical-align:middle; }
+  .war-rank-breakdown { display:flex; flex-wrap:wrap; gap:6px; }
+  .war-rank-chip { font-size:10px; color:#555; background:#111; padding:2px 7px; border-radius:3px; }
+  .war-rank-chip b { color:#888; }
+  .war-empty-team { color:#2a2a2a; font-size:11px; font-style:italic; padding:12px 4px; text-align:center; }
+  /* ── MOBILE ── */
+  @media (max-width: 768px) {
+    body { padding-bottom: 58px; }
+
+    header { padding: 8px 14px; }
+    .logo { font-size: 22px; }
+    #last-update { display: none; }
+
+    .layout {
+      display: block;
+      height: auto;
+    }
+
+    .left-panel {
+      padding: 10px 12px;
+      height: auto;
+      overflow-y: visible;
+    }
+
+    .right-panel {
+      display: none;
+      border-left: none;
+      border-top: 1px solid var(--border);
+      height: calc(100vh - 52px - 58px);
+    }
+    .right-panel.mob-visible {
+      display: flex;
+    }
+
+    /* Search full width, nav tabs hidden (bottom nav handles it) */
+    .toolbar { flex-wrap: wrap; }
+    .toolbar .filter-btn { display: none; }
+    .search-box { max-width: 100% !important; width: 100% !important; }
+
+    /* Filter rows scroll horizontally */
+    .filter-row {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-bottom: 2px;
+    }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .plating-pills, .city-pills { flex-wrap: nowrap; }
+    .plating-label { flex-shrink: 0; }
+
+    /* Single column family cards */
+    .families-grid { grid-template-columns: 1fr; gap: 8px; }
+    .family-members { max-height: none; }
+
+    /* War: stack vertically */
+    .war-main { flex-direction: column; }
+    .war-team-col { flex-direction: column; }
+
+    /* Bottom nav */
+    .mob-nav {
+      display: flex;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+      height: 58px;
+      background: #000;
+      border-top: 1px solid var(--border);
+    }
+    .mob-nav-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 3px;
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 10px; font-weight: 500;
+      -webkit-tap-highlight-color: transparent;
+      transition: color .15s;
+    }
+    .mob-nav-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+    .mob-nav-btn.mob-active { color: var(--red); }
+  }
+  @media (min-width: 769px) {
+    .mob-nav { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">O<span style="text-decoration:underline;text-underline-offset:6px;text-decoration-thickness:2px">MERT</span>A&nbsp;<span style="font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:400;letter-spacing:3px;color:rgba(255,255,255,0.45);vertical-align:middle">tracker</span></div>
+  <div class="header-right">
+    <span id="status-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3a9e5f;margin-right:4px;animation:blink 1.4s ease-in-out infinite"></span><span id="status-text">Connecting...</span>
+    <span id="last-update"></span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT: main content -->
+  <div class="left-panel">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <input class="search-box" id="search" type="text" placeholder="Search players or families..." oninput="applyFilters()">
+      <button class="filter-btn active" onclick="setView('families',this)">Families</button>
+      <button class="filter-btn" onclick="setView('users',this)">All Users</button>
+      <button class="filter-btn" onclick="setView('war',this)">War Scenario</button>
+    </div>
+
+    <!-- Filter row -->
+    <div class="filter-row">
+      <div class="select-wrap">
+        <select id="family-select" onchange="applyFilters()">
+          <option value="">All Families</option>
+          <option value="Famless">Famless</option>
+        </select>
+      </div>
+
+      <div class="select-wrap">
+        <select id="rank-select" onchange="applyFilters()">
+          <option value="">All Ranks</option>
+          <option>Godfather</option>
+          <option>First Lady</option>
+          <option>Capodecina</option>
+          <option>Bruglione</option>
+          <option>Chief</option>
+          <option>Local Chief</option>
+          <option>Assassin</option>
+          <option>Swindler</option>
+          <option>Soldier</option>
+          <option>Mobster</option>
+          <option>Associate</option>
+          <option>Thief</option>
+          <option>Pickpocket</option>
+          <option>Shoplifter</option>
+          <option>Picciotto</option>
+          <option>Delivery Boy</option>
+          <option>Delivery Girl</option>
+          <option>Empty-suit</option>
+        </select>
+      </div>
+
+      <div class="stats-bar" style="margin:0 0 0 8px">
+        <span><strong id="stat-families">0</strong> Families</span>
+      </div>
+    </div>
+
+    <div class="filter-row" style="margin-top:-8px">
+      <span class="plating-label">Plating:</span>
+      <div class="plating-pills">
+        <button class="plating-pill active" data-plating="All"      onclick="setPlating('All',this)">All</button>
+        <button class="plating-pill"        data-plating="None"     onclick="setPlating('None',this)">None</button>
+        <button class="plating-pill"        data-plating="Very Low" onclick="setPlating('Very Low',this)" style="color:#cc3300">Very Low</button>
+        <button class="plating-pill"        data-plating="Low"      onclick="setPlating('Low',this)"      style="color:#ff9966">Low</button>
+        <button class="plating-pill"        data-plating="Medium"   onclick="setPlating('Medium',this)"   style="color:#ffcc00">Medium</button>
+        <button class="plating-pill"        data-plating="High"     onclick="setPlating('High',this)"     style="color:#99cc33">High</button>
+        <button class="plating-pill"        data-plating="Very High" onclick="setPlating('Very High',this)" style="color:#339900">Very High</button>
+      </div>
+      <div class="stats-bar" style="margin:0 0 0 8px" id="rank-stats-bar"></div>
+    </div>
+    <div class="filter-row" style="margin-top:-8px">
+      <span class="plating-label">City:</span>
+      <div class="city-pills">
+        <button class="city-pill active" data-city="" onclick="setCity('',this)">All</button>
+        <button class="city-pill" data-city="Detroit"      onclick="setCity('Detroit',this)"      style="--cc:#e67e22;color:#e67e22;border-color:#e67e2244">Detroit</button>
+        <button class="city-pill" data-city="Chicago"      onclick="setCity('Chicago',this)"      style="--cc:#3498db;color:#3498db;border-color:#3498db44">Chicago</button>
+        <button class="city-pill" data-city="New York"     onclick="setCity('New York',this)"     style="--cc:#b39ddb;color:#b39ddb;border-color:#b39ddb44">New York</button>
+        <button class="city-pill" data-city="Las Vegas"    onclick="setCity('Las Vegas',this)"    style="--cc:#f1c40f;color:#f1c40f;border-color:#f1c40f44">Las Vegas</button>
+        <button class="city-pill" data-city="Philadelphia" onclick="setCity('Philadelphia',this)" style="--cc:#1abc9c;color:#1abc9c;border-color:#1abc9c44">Philadelphia</button>
+        <button class="city-pill" data-city="Baltimore"    onclick="setCity('Baltimore',this)"    style="--cc:#e74c3c;color:#e74c3c;border-color:#e74c3c44">Baltimore</button>
+        <button class="city-pill" data-city="Corleone"     onclick="setCity('Corleone',this)"     style="--cc:#e91e8c;color:#e91e8c;border-color:#e91e8c44">Corleone</button>
+        <button class="city-pill" data-city="Palermo"      onclick="setCity('Palermo',this)"      style="--cc:#00bcd4;color:#00bcd4;border-color:#00bcd444">Palermo</button>
+      </div>
+    </div>
+    <div id="main-content">
+      <div class="empty-state">No families found</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Events -->
+  <div class="right-panel">
+    <div class="feed-header">EVENTS</div>
+
+    <div id="feed-list">
+      <div class="feed-empty">Waiting for events...</div>
+    </div>
+  </div>
+
+</div>
+
+<nav class="mob-nav" id="mob-nav">
+  <button class="mob-nav-btn mob-active" onclick="mobNav('families',this)">
+    <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+    Families
+  </button>
+  <button class="mob-nav-btn" onclick="mobNav('users',this)">
+    <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.85"/></svg>
+    All Users
+  </button>
+  <button class="mob-nav-btn" onclick="mobNav('war',this)">
+    <svg viewBox="0 0 24 24"><path d="M14.5 2.5c0 1.5-1.5 4-2.5 5.5-1-1.5-2.5-4-2.5-5.5a2.5 2.5 0 015 0z"/><path d="M12 8v13M8 21h8M5 10l7-2 7 2"/></svg>
+    War
+  </button>
+  <button class="mob-nav-btn" onclick="mobNav('events',this)">
+    <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+    Events
+  </button>
+</nav>
+
+<script>
+  function mobNav(view, btn) {
+    if (window.innerWidth > 768) return;
+    document.querySelectorAll('.mob-nav-btn').forEach(b => b.classList.remove('mob-active'));
+    btn.classList.add('mob-active');
+    const left  = document.querySelector('.left-panel');
+    const right = document.querySelector('.right-panel');
+    if (view === 'events') {
+      left.style.display  = 'none';
+      right.classList.add('mob-visible');
+    } else {
+      left.style.display  = '';
+      right.classList.remove('mob-visible');
+      const desktopBtns = document.querySelectorAll('.toolbar .filter-btn');
+      desktopBtns.forEach(b => {
+        if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(view)) {
+          setView(view, b);
+        }
+      });
+    }
+  }
+</script>
+
+<script>
+  // ── CONFIG — değiştir ────────────────────────────────────────────────────
+  const SUPABASE_URL = 'https://teajgaxzupruukjvrlql.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlYWpnYXh6dXBydXVranZybHFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NTM1MTMsImV4cCI6MjA4ODMyOTUxM30.0ssSfLJKxaNDhb8Wo9QWDfHd-4tRaK6Vu9R6FWkEn_U';
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const PLATING_ORDER  = ['Very High','High','Medium','Low','Very Low'];
+  const PLATING_COLORS = { 'Very High':'#339900','High':'#99cc33','Medium':'#ffcc00','Low':'#ff9966','Very Low':'#cc3300' };
+  const RANK_ORDER     = ['Godfather','First Lady','Capodecina','Bruglione','Chief','Local Chief','Assassin','Swindler','Soldier','Mobster','Associate','Thief','Pickpocket','Shoplifter','Picciotto','Delivery Boy','Delivery Girl','Empty-suit'];
+  const TITLE_ORDER  = ['Don','Consig','Sotto','Capo'];
+  const TITLE_COLORS = { 'Don':'#8B5E3C', 'Consig':'#c9a84c', 'Sotto':'#c9a84c', 'Capo':'#c0392b' };
+  function extractTitle(name) {
+    for (const t of TITLE_ORDER)
+      if (name.startsWith(t + ' ')) return { title: t, cleanName: name.slice(t.length + 1) };
+    return { title: null, cleanName: name };
+  }
+
+  let allUsers    = [];
+  let feedItems   = [];
+  let lastFeedId  = 0;
+  let currentView    = 'families';
+  let currentPlating = 'All';
+  let currentCity    = '';
+
+
+  function platingColor(p) { return PLATING_COLORS[p] || null; }
+  function rankIndex(r)    { const i = RANK_ORDER.indexOf(r); return i === -1 ? 99 : i; }
+
+  function shieldSVG(color) {
+    return `<svg width="10" height="11" viewBox="0 0 10 11" fill="${color}" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;flex-shrink:0"><path d="M5 0L0 2v4c0 2.8 2.1 5.4 5 6 2.9-.6 5-3.2 5-6V2L5 0z"/></svg>`;
+  }
+
+  // ── SUPABASE HELPERS ─────────────────────────────────────────────────────
+  async function sbFetch(path) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Range-Unit': 'items',
+        'Range': '0-9999'
+      }
+    });
+    return res.json();
+  }
+
+  // ── LOAD USERS ────────────────────────────────────────────────────────────
+  let familyCities = {};
+
+  async function loadUsers() {
+    try {
+      // Load family cities
+      try {
+        const fcRes = await fetch(`${SUPABASE_URL}/rest/v1/families?select=name,city`, {
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+        });
+        const fcData = await fcRes.json();
+        if (Array.isArray(fcData)) fcData.forEach(f => { familyCities[f.name] = f.city; });
+      } catch(e) {}
+
+      let all = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*&order=name`, {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Range-Unit': 'items',
+            'Range': `${from}-${from + pageSize - 1}`
+          }
+        });
+        const page = await res.json();
+        if (!Array.isArray(page) || page.length === 0) break;
+        all = all.concat(page);
+        if (page.length < pageSize) break;
+        from += pageSize;
+      }
+      allUsers = all.filter(u => u.family);
+      console.log('[MF] Total users loaded:', all.length, '| non-Famless:', allUsers.length);
+
+      const plated   = allUsers.filter(u => u.plating && u.plating !== 'None').length;
+      const unplated = allUsers.length - plated;
+      const famCount = new Set(allUsers.map(u => u.family)).size;
+
+      document.getElementById('stat-families').textContent = famCount;
+
+      // Rank stats
+      const RANK_LABELS = [['Godfather','GF'],['First Lady','FL'],['Capodecina','CD'],['Bruglione','Brug'],['Chief','Chief'],['Local Chief','LC']];
+      const rankCts = {};
+      allUsers.forEach(u => { if (u.rank) rankCts[u.rank] = (rankCts[u.rank]||0)+1; });
+      document.getElementById('rank-stats-bar').innerHTML = RANK_LABELS
+        .filter(([r]) => rankCts[r])
+        .map(([r,label]) => `<span><strong style="color:#888;font-size:11px;font-family:'Share Tech Mono',monospace">${rankCts[r]}</strong> <span style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:0.5px">${label}</span></span>`)
+        .join('');
+
+      document.getElementById('status-text').textContent   = 'Live';
+
+  async function checkHeartbeat() {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq._heartbeat&select=updated_at&limit=1`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      const d = await r.json();
+      if (!d || !d.length) return;
+      const diff = (Date.now() - new Date(d[0].updated_at)) / 1000;
+      const dot  = document.getElementById('status-dot');
+      const txt  = document.getElementById('status-text');
+      if (diff > 120) {
+        dot.style.background = '#e57373';
+        txt.style.color = '#e57373';
+        txt.textContent = 'Offline';
+      } else {
+        dot.style.background = '#3a9e5f';
+        txt.style.color = '#3a9e5f';
+        txt.textContent = 'Live';
+      }
+    } catch(e) {}
+  }
+  setInterval(checkHeartbeat, 10000);
+  checkHeartbeat();
+      document.getElementById('last-update').textContent = '';
+
+      updateFamilyDropdown(allUsers);
+      applyFilters();
+    } catch(e) {
+      document.getElementById('status-text').textContent = 'Error';
+    }
+  }
+
+  // ── LOAD FEED ─────────────────────────────────────────────────────────────
+  async function loadFeed() {
+    try {
+      const path = lastFeedId
+        ? `feed?select=*&id=gt.${lastFeedId}&order=id.desc&limit=100`
+        : `feed?select=*&order=id.desc&limit=100`;
+      const data = await sbFetch(path);
+      if (!data || !data.length) return;
+
+      if (lastFeedId === 0) {
+        feedItems = data;
+      } else {
+        feedItems = [...data, ...feedItems].slice(0, 300);
+      }
+      lastFeedId = Math.max(...feedItems.map(f => f.id));
+      renderFeed();
+    } catch(e) {}
+  }
+
+  // ── FILTER / VIEW CONTROLS ────────────────────────────────────────────────
+  function updateFamilyDropdown(users) {
+    const sel = document.getElementById('family-select');
+    const cur = sel.value;
+    const families = [...new Set(users.map(u => u.family))].sort();
+    sel.innerHTML = '<option value="">All Families</option>' +
+      families.map(f => `<option value="${f}"${f === cur ? ' selected' : ''}>${f}</option>`).join('');
+
+
+  }
+
+  function setView(view, btn) {
+    currentView = view;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilters();
+  }
+  function setPlating(p, btn) {
+    currentPlating = p;
+    document.querySelectorAll('.plating-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilters();
+  }
+  const CITY_BG = {'Detroit':'rgba(230,126,34,0.15)','Chicago':'rgba(52,152,219,0.15)','New York':'rgba(179,157,219,0.15)','Las Vegas':'rgba(241,196,15,0.15)','Philadelphia':'rgba(26,188,156,0.15)','Baltimore':'rgba(231,76,60,0.15)','Corleone':'rgba(233,30,140,0.15)','Palermo':'rgba(0,188,212,0.15)'};
+  function setCity(c, btn) {
+    currentCity = c;
+    document.querySelectorAll('.city-pill').forEach(b => {
+      b.classList.remove('active');
+      b.style.background = 'none';
+      b.style.borderColor = '';
+    });
+    btn.classList.add('active');
+    if (c) {
+      btn.style.background   = CITY_BG[c] || 'none';
+      btn.style.borderColor  = btn.style.color;
+    }
+    applyFilters();
+  }
+
+  function resetFilters() {
+    document.getElementById('search').value = '';
+    document.getElementById('family-select').value = '';
+    currentCity = '';
+    document.querySelectorAll('.city-pill').forEach(b => { b.classList.remove('active'); b.style.background='none'; });
+    document.querySelector('[data-city=""]').classList.add('active');
+    document.getElementById('rank-select').value = '';
+    currentPlating = 'All';
+    document.querySelectorAll('.plating-pill').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-plating="All"]').classList.add('active');
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const q       = document.getElementById('search').value.toLowerCase().trim();
+    const selFam  = document.getElementById('family-select').value;
+    const selCity = currentCity;
+    const selRank = document.getElementById('rank-select').value;
+
+    let filtered = allUsers;
+    if (q)       filtered = filtered.filter(u => u.name?.toLowerCase().includes(q) || u.family?.toLowerCase().includes(q));
+    if (selFam)  filtered = filtered.filter(u => u.family === selFam);
+    if (selCity) filtered = filtered.filter(u => familyCities[u.family] === selCity);
+    if (selRank) filtered = filtered.filter(u => u.rank === selRank);
+    if (currentPlating !== 'All') filtered = filtered.filter(u => (u.plating || 'None') === currentPlating);
+
+    if (currentView === 'families') renderFamilies(filtered);
+    else if (currentView === 'war') renderWar();
+    else renderAllUsers(filtered);
+  }
+
+  // ── WAR SCENARIO ─────────────────────────────────────────────────────────
+  let warGreen = new Set();
+  let warRed   = new Set();
+
+  function setWarTeam(famName, team) {
+    if (team === 'green') {
+      if (warGreen.has(famName)) { warGreen.delete(famName); }
+      else { warGreen.add(famName); warRed.delete(famName); }
+    } else {
+      if (warRed.has(famName)) { warRed.delete(famName); }
+      else { warRed.add(famName); warGreen.delete(famName); }
+    }
+    renderWar();
+  }
+
+  function warFamScore(s) {
+    return s.gf*20 + s.fl*20 + s.cd*16 + s.brug*12 + s.chief*7 + s.lc*5;
+  }
+
+  function warFamStats(famName) {
+    const members = allUsers.filter(u => u.family === famName && u.id !== '_heartbeat');
+    return {
+      total: members.length,
+      gf:    members.filter(u => u.rank === 'Godfather').length,
+      fl:    members.filter(u => u.rank === 'First Lady').length,
+      cd:    members.filter(u => u.rank === 'Capodecina').length,
+      brug:  members.filter(u => u.rank === 'Bruglione').length,
+      chief: members.filter(u => u.rank === 'Chief').length,
+      lc:    members.filter(u => u.rank === 'Local Chief').length,
+    };
+  }
+
+  const CITY_COLORS = {
+    'Detroit':      '#e67e22',
+    'Chicago':      '#3498db',
+    'New York':     '#9b59b6',
+    'Las Vegas':    '#f1c40f',
+    'Philadelphia': '#1abc9c',
+    'Baltimore':    '#e74c3c',
+    'Corleone':     '#e91e8c',
+    'Palermo':      '#00bcd4',
+  };
+
+  function renderWarTeamBox(teamSet, cls) {
+    if (teamSet.size === 0) return `<div class="war-empty-team">No families selected</div>`;
+    let tot = { gf:0, fl:0, cd:0, brug:0, chief:0, lc:0 };
+    const rows = [...teamSet].map(famName => {
+      const s = warFamStats(famName);
+      tot.gf+=s.gf; tot.fl+=s.fl; tot.cd+=s.cd;
+      tot.brug+=s.brug; tot.chief+=s.chief; tot.lc+=s.lc;
+      const city = familyCities[famName] || '';
+      const cityColor = CITY_COLORS[city] || '#555';
+      const score = warFamScore(s);
+      const parts = [];
+      if (s.gf)  parts.push(`<b>${s.gf}</b> GF`);
+      if (s.fl)  parts.push(`<b>${s.fl}</b> FL`);
+      if (s.cd)  parts.push(`<b>${s.cd}</b> CD`);
+      parts.push(`<b>${s.brug}</b> Brug`, `<b>${s.chief}</b> Chief`, `<b>${s.lc}</b> LC`);
+      const cityBadge = city ? `<span style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:1px 5px;border-radius:3px;border:1px solid ${cityColor};color:${cityColor};background:${cityColor}18">${city}</span>` : '';
+      return `<div class="war-team-entry">
+        <div class="wte-info">
+          <div class="wte-top"><span class="wte-name">${famName}</span>${cityBadge}</div>
+          <div class="wte-stats">${parts.join(' · ')}</div>
+        </div>
+        <span class="wte-pts"><b>${score}</b> pts</span>
+        <span class="wte-remove" onclick="setWarTeam('${famName}','${cls}')">×</span>
+      </div>`;
+    }).join('');
+    const totalScore = warFamScore(tot);
+    const chips = [];
+    if (tot.gf)  chips.push(`<span class="war-rank-chip"><b>${tot.gf}</b> GF</span>`);
+    if (tot.fl)  chips.push(`<span class="war-rank-chip"><b>${tot.fl}</b> FL</span>`);
+    if (tot.cd)  chips.push(`<span class="war-rank-chip"><b>${tot.cd}</b> CD</span>`);
+    chips.push(
+      `<span class="war-rank-chip"><b>${tot.brug}</b> Brug</span>`,
+      `<span class="war-rank-chip"><b>${tot.chief}</b> Chief</span>`,
+      `<span class="war-rank-chip"><b>${tot.lc}</b> LC</span>`
+    );
+    return `<div class="war-totals-box">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="war-total-score">${totalScore}<span>PTS</span></div>
+        <div class="war-rank-breakdown">${chips.join('')}</div>
+      </div>
+    </div>
+    <div class="war-entries">${rows}</div>`;
+  }
+
+  function renderWar() {
+    const el = document.getElementById('main-content');
+    const selCity = currentCity;
+
+    const families = {};
+    allUsers.filter(u => u.family && u.family !== 'Famless' && u.id !== '_heartbeat').forEach(u => {
+      if (!families[u.family]) families[u.family] = [];
+      families[u.family].push(u);
+    });
+
+    const famList = Object.entries(families)
+      .filter(([famName]) => !selCity || (familyCities[famName] === selCity))
+      .map(([famName, members]) => {
+        const s = warFamStats(famName);
+        const score = warFamScore(s);
+        return { famName, members, s, score };
+      })
+      .sort((a,b) => b.score - a.score)
+      .map(({ famName, s, score }) => {
+        const city = familyCities[famName] || '';
+        const cityColor = CITY_COLORS[city] || '#555';
+        const isGreen = warGreen.has(famName);
+        const isRed   = warRed.has(famName);
+        const rowClass = isGreen ? 'team-green' : isRed ? 'team-red' : '';
+        const cityBadge = city ? `<span class="war-city-badge" style="color:${cityColor};border-color:${cityColor};background:${cityColor}18">${city}</span>` : '';
+        const statParts = [];
+        if (s.gf) statParts.push(`<b>${s.gf}</b>GF`);
+        if (s.fl) statParts.push(`<b>${s.fl}</b>FL`);
+        if (s.cd) statParts.push(`<b>${s.cd}</b>CD`);
+        statParts.push(`<b>${s.brug}</b>B`, `<b>${s.chief}</b>C`, `<b>${s.lc}</b>LC`);
+        return `<div class="war-row ${rowClass}">
+          <span class="war-fam-name">${famName}</span>
+          ${cityBadge}
+          <span class="war-stats">${statParts.join(' ')}</span>
+          <span class="war-pts"><b>${score}</b></span>
+          <div class="war-btns">
+            <button class="war-btn green ${isGreen?'active':''}" onclick="setWarTeam('${famName}','green')">G</button>
+            <button class="war-btn red   ${isRed  ?'active':''}" onclick="setWarTeam('${famName}','red')">R</button>
+          </div>
+        </div>`;
+      }).join('');
+
+    // VS bar scores
+    const greenTot = [...warGreen].reduce((a,f)=>{ const s=warFamStats(f); return a+warFamScore(s); },0);
+    const redTot   = [...warRed  ].reduce((a,f)=>{ const s=warFamStats(f); return a+warFamScore(s); },0);
+    const total = greenTot + redTot || 1;
+    const greenPct = Math.max(10, Math.round(greenTot/total*100));
+    const redPct   = Math.max(10, 100 - greenPct);
+
+    const vsBar = `<div class="war-vs-bar">
+      <div class="war-vs-green" style="flex:${greenPct}">
+        <span class="war-vs-score">${greenTot}</span>
+        <span class="war-vs-label">Green</span>
+      </div>
+      <div class="war-vs-mid"><span>VS</span></div>
+      <div class="war-vs-red" style="flex:${redPct}">
+        <span class="war-vs-label">Red</span>
+        <span class="war-vs-score">${redTot}</span>
+      </div>
+    </div>`;
+
+    el.innerHTML = `<div class="war-layout">
+      ${vsBar}
+      <div class="war-main">
+        <div class="war-list-col">${famList || '<div class="empty-state">No families found</div>'}</div>
+        <div class="war-team-col">
+          <div class="war-team-box green">
+            <div class="war-team-header">
+              <span class="war-team-title">⬤ Team Green</span>
+              <button class="war-reset-btn" onclick="warGreen.clear();renderWar()">Reset</button>
+            </div>
+            ${renderWarTeamBox(warGreen, 'green')}
+          </div>
+          <div class="war-team-box red">
+            <div class="war-team-header">
+              <span class="war-team-title">⬤ Team Red</span>
+              <button class="war-reset-btn" onclick="warRed.clear();renderWar()">Reset</button>
+            </div>
+            ${renderWarTeamBox(warRed, 'red')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function renderFamilies(users) {
+    const el = document.getElementById('main-content');
+    const families = {};
+    users.forEach(u => {
+      if (!u.family || u.family === 'Famless') return;
+      if (!families[u.family]) families[u.family] = [];
+      families[u.family].push(u);
+    });
+    const sorted = Object.entries(families).sort((a,b) => b[1].length - a[1].length);
+    if (!sorted.length) {
+      el.innerHTML = '<div class="empty-state">No families found</div>';
+      return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'families-grid';
+
+    sorted.forEach(([fam, members]) => {
+      const counts = {};
+      members.forEach(m => {
+        if (m.plating && m.plating !== 'None')
+          counts[m.plating] = (counts[m.plating] || 0) + 1;
+      });
+
+      const noneCount = members.filter(m => !m.plating || m.plating === 'None').length;
+      const platingBar = PLATING_ORDER
+        .filter(l => counts[l])
+        .map(l => `<span class="plating-stat">${shieldSVG(platingColor(l))} <span style="color:${platingColor(l)}">${counts[l]}</span></span>`)
+        .join('') + (noneCount ? `<span class="plating-stat">${shieldSVG('#444')} <span style="color:#555">${noneCount}</span></span>` : '')
+        || `<span style="color:var(--muted);font-size:10px">No plating</span>`;
+
+      const TOP_RANKS = ['Godfather','First Lady','Capodecina','Bruglione','Chief','Local Chief'];
+      const rankCounts = {};
+      members.forEach(m => { if (TOP_RANKS.includes(m.rank)) rankCounts[m.rank] = (rankCounts[m.rank]||0)+1; });
+      const rankBar = TOP_RANKS
+        .filter(r => rankCounts[r])
+        .map(r => `<span class="plating-stat"><span style="color:#888;font-size:9px;text-transform:uppercase;letter-spacing:0.5px">${r.replace('Godfather','GF').replace('First Lady','FL').replace('Capodecina','CD').replace('Bruglione','Brug').replace('Local Chief','LC')}</span> <span style="color:#e8e8e8;font-weight:700;font-size:11px">${rankCounts[r]}</span></span>`)
+        .join('');
+
+      const TITLE_ORDER = ['Don','Consig','Sotto','Capo'];
+      const TITLE_COLORS = { 'Don':'#8B5E3C', 'Consig':'#c9a84c', 'Sotto':'#c9a84c', 'Capo':'#c0392b' };
+      function extractTitle(name) {
+        for (const t of TITLE_ORDER) {
+          if (name.startsWith(t + ' ')) return { title: t, cleanName: name.slice(t.length + 1) };
+        }
+        return { title: null, cleanName: name };
+      }
+      function titlePriority(name) {
+        const idx = TITLE_ORDER.indexOf(extractTitle(name).title);
+        return idx === -1 ? 99 : idx;
+      }
+
+      const memberRows = [...members]
+        .sort((a,b) => {
+          const tp = titlePriority(a.name) - titlePriority(b.name);
+          if (tp !== 0) return tp;
+          return rankIndex(a.rank) - rankIndex(b.rank);
+        })
+        .map(m => {
+          const pCol = platingColor(m.plating);
+          const { title, cleanName } = extractTitle(m.name);
+          const titleTag = title
+            ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${TITLE_COLORS[title]}22;color:${TITLE_COLORS[title]};border:1px solid ${TITLE_COLORS[title]}55;flex-shrink:0">${title}</span>`
+            : '';
+          return `<div class="member-row">
+            <span>${pCol ? shieldSVG(pCol) : ''}</span>
+            <span class="member-name">${cleanName}</span>
+            <span class="member-title">${titleTag}</span>
+            <span class="member-rank">${m.rank || ''}</span>
+          </div>`;
+        }).join('');
+
+      const card = document.createElement('div');
+      card.className = 'family-card';
+      card.innerHTML = `
+        <div class="family-header">
+          <span class="family-name">${fam}</span>
+          ${familyCities[fam] ? `<span style="font-size:9px;color:#555;margin-right:6px;letter-spacing:0.5px;text-transform:uppercase">${familyCities[fam]}</span>` : ''}
+          <span class="family-count">${members.length} members</span>
+        </div>
+        <div class="family-plating-bar">${platingBar}</div>
+        ${rankBar ? `<div style="padding:4px 12px 6px;font-size:10px;display:flex;gap:10px;flex-wrap:wrap">${rankBar}</div>` : ''}
+        <div class="family-members">${memberRows}</div>
+      `;
+      grid.appendChild(card);
+    });
+
+    el.innerHTML = '';
+    el.appendChild(grid);
+  }
+
+  // ── RENDER: ALL USERS ─────────────────────────────────────────────────────
+  function renderAllUsers(users) {
+    const el = document.getElementById('main-content');
+    if (!users.length) { el.innerHTML = '<div class="empty-state">No users found</div>'; return; }
+    const sorted = [...users].sort((a,b) => { const ri = rankIndex(a.rank)-rankIndex(b.rank); if(ri!==0) return ri; return extractTitle(a.name||'').cleanName.localeCompare(extractTitle(b.name||'').cleanName); });
+    el.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px">
+            <th style="text-align:left;padding:8px 12px;border-bottom:1px solid var(--border)">Name</th>
+          <style>.tbl-no-select { user-select:none; -webkit-user-select:none; }</style>
+            <th style="text-align:left;padding:8px 12px;border-bottom:1px solid var(--border)">Rank</th>
+            <th style="text-align:left;padding:8px 12px;border-bottom:1px solid var(--border)">Family</th>
+            <th style="text-align:left;padding:8px 12px;border-bottom:1px solid var(--border)">Plating</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sorted.map(u => {
+            const pCol = platingColor(u.plating);
+            const { title, cleanName } = extractTitle(u.name || '');
+            const titleBadge = title
+              ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${TITLE_COLORS[title]}22;color:${TITLE_COLORS[title]};border:1px solid ${TITLE_COLORS[title]}55;margin-left:6px">${title}</span>`
+              : '';
+            return `<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">
+              <td style="padding:6px 12px">${cleanName || '—'}</td>
+              <td style="padding:6px 12px;color:var(--muted);user-select:none;-webkit-user-select:none">${u.rank || '—'}</td>
+              <td style="padding:6px 12px;user-select:none;-webkit-user-select:none">${u.family || '—'}${titleBadge}</td>
+              <td style="padding:6px 12px;user-select:none;-webkit-user-select:none">${pCol
+                ? `${shieldSVG(pCol)}<span style="color:${pCol};margin-left:5px">${u.plating}</span>`
+                : `<span style="color:var(--muted)">None</span>`}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  // ── RENDER: FEED ──────────────────────────────────────────────────────────
+  function renderFeed() {
+    const el = document.getElementById('feed-list');
+    const visible = feedItems
+      .filter((f, i, arr) => {
+        // Remove duplicates: same name + field within 5 minutes
+        const fTime = new Date(f.created_at).getTime();
+        return !arr.slice(0, i).some(prev =>
+          prev.name === f.name &&
+          prev.field === f.field &&
+          Math.abs(new Date(prev.created_at).getTime() - fTime) < 5 * 60 * 1000
+        );
+      });
+    if (!visible.length) {
+      el.innerHTML = '<div class="feed-empty">Waiting for events...</div>';
+      return;
+    }
+    el.innerHTML = visible.map(f => {
+      const time = new Date(f.created_at).toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
+
+      if (f.type === 'plating') {
+        if (f.field === 'LostPlating') return `
+          <div class="feed-item lost-plating">
+            <span class="feed-time">${time}</span>
+            <span class="feed-name">${f.name}</span>
+            <span style="color:#888"> (${f.family}) lost plating</span>
+          </div>`;
+        if (f.field === 'GainedPlating') return `
+          <div class="feed-item lost-plating">
+            <span class="feed-time">${time}</span>
+            <span class="feed-name">${f.name}</span>
+            <span style="color:#888"> gained </span>
+            <span style="color:${platingColor(f.new_val) || '#888'}">${f.new_val}</span>
+          </div>`;
+      }
+
+      if (f.type === 'family') {
+        if (f.field === 'Left') return `
+          <div class="feed-item family-left">
+            <span class="feed-time">${time}</span>
+            <span class="feed-name">${f.name}</span>
+            <span style="color:#888"> left </span>
+            <span style="color:#e57373">${f.old_val}</span>
+          </div>`;
+        if (f.field === 'Joined') return `
+          <div class="feed-item family-joined">
+            <span class="feed-time">${time}</span>
+            <span class="feed-name">${f.name}</span>
+            <span style="color:#888"> joined </span>
+            <span style="color:#81c784">${f.new_val}</span>
+          </div>`;
+        if (f.field === 'Died') return `
+          <div class="feed-item family-died">
+            <span class="feed-time">${time}</span>
+            <span class="feed-name">${f.name}</span>
+            <span style="color:#888"> (${f.old_val}) died 💀</span>
+          </div>`;
+        if (f.field === 'FamilyCreated') {
+          const city = f.old_val || '';
+          return `
+          <div class="feed-item" style="border-color:#27ae60;background:rgba(39,174,96,0.1)">
+            <span class="feed-time">${time}</span>
+            <span class="feed-name">${f.name}</span>
+            <span style="color:#27ae60"> created in </span>
+            <span style="color:#81c784">${city}</span>
+          </div>`;}
+        if (f.field === 'FamilyDowned') {
+          const city = familyCities[f.name] || f.old_val || '';
+          const cityStr = city ? ` (${city})` : '';
+          return `
+          <div class="feed-item" style="border-color:#c0392b;background:rgba(192,57,43,0.1)">
+            <span class="feed-time">${time}</span>
+            <span class="feed-name">${f.name}</span>
+            <span style="color:#c0392b">${cityStr} family downed</span>
+          </div>`;}
+        if (f.field === 'LeftJoined') return `
+          <div class="feed-item family-moved">
+            <span class="feed-time">${time}</span>
+            <span class="feed-name">${f.name}</span>
+            <span style="color:#888"> left </span>
+            <span style="color:#e57373">${f.old_val}</span>
+            <span style="color:#888"> to join </span>
+            <span style="color:#81c784">${f.new_val}</span>
+          </div>`;
+        
+      }
+      return '';
+    }).join('');
+  }
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  loadUsers();
+  loadFeed();
+  setInterval(loadUsers, 30000);
+  setInterval(loadFeed,  10000);
+</script>
+</body>
+</html>
