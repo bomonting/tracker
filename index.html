@@ -1495,8 +1495,16 @@
       list.innerHTML = '<div style="color:var(--muted);font-size:13px">No users yet.</div>';
       return;
     }
+    const PAGE_LABELS = { families:'Families', users:'All Users', war:'War', casinos:'Casinos' };
     list.innerHTML = users.map(u => {
-      const pages = u.role === 'admin' ? 'all' : (u.pages || 'families,users,war');
+      const pageStr = u.role === 'admin' ? 'all' : (u.pages || 'families,users,war');
+      const pagesList = pageStr === 'all' ? Object.keys(PAGE_LABELS) : pageStr.split(',').map(p => p.trim());
+      const isSelf = u.username === session.username;
+      const checkboxes = Object.entries(PAGE_LABELS).map(([val, label]) =>
+        `<label style="display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--muted);font-size:11px;white-space:nowrap">
+          <input type="checkbox" data-page="${val}" ${pagesList.includes(val) ? 'checked' : ''}> ${label}
+        </label>`
+      ).join('');
       return `
       <div class="admin-user-item" style="flex-direction:column;align-items:flex-start;gap:4px">
         <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
@@ -1504,14 +1512,55 @@
             <span class="admin-user-name">${u.username}</span>
             <span class="admin-user-role ${u.role}">${u.role}</span>
           </div>
-          ${u.username === session.username
-            ? '<span class="admin-self-tag">You</span>'
-            : `<button class="admin-del-btn" onclick="deleteSiteUser('${u.id}','${u.username}')">Delete</button>`
-          }
+          <div style="display:flex;gap:6px">
+            ${isSelf
+              ? '<span class="admin-self-tag">You</span>'
+              : `<button class="admin-del-btn" onclick="toggleEditUser('${u.id}')">Edit</button>
+                 <button class="admin-del-btn" onclick="deleteSiteUser('${u.id}','${u.username}')">Delete</button>`
+            }
+          </div>
         </div>
-        <div style="font-size:11px;color:var(--muted)">Pages: ${pages}</div>
+        <div style="font-size:11px;color:var(--muted)">Pages: ${pageStr}</div>
+        <div id="edit-form-${u.id}" style="display:none;width:100%;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+            <div class="select-wrap">
+              <select id="edit-role-${u.id}" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:6px 28px 6px 10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;outline:none;appearance:none;cursor:pointer;min-width:0">
+                <option value="user" ${u.role==='user'?'selected':''}>User</option>
+                <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+              </select>
+            </div>
+            <div id="edit-pages-${u.id}" style="display:flex;gap:10px;flex-wrap:wrap">${checkboxes}</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="admin-create-btn" style="padding:5px 14px;font-size:12px;width:auto" onclick="saveEditUser('${u.id}')">Save</button>
+            <button class="admin-del-btn" onclick="toggleEditUser('${u.id}')">Cancel</button>
+            <span id="edit-err-${u.id}" style="font-size:11px;color:var(--rose)"></span>
+          </div>
+        </div>
       </div>
     `}).join('');
+  }
+
+  function toggleEditUser(id) {
+    const form = document.getElementById(`edit-form-${id}`);
+    if (form) form.style.display = form.style.display === 'none' ? '' : 'none';
+  }
+
+  async function saveEditUser(id) {
+    const role   = document.getElementById(`edit-role-${id}`)?.value;
+    const pages  = [...document.querySelectorAll(`#edit-pages-${id} input:checked`)].map(c => c.dataset.page).join(',') || 'families';
+    const errEl  = document.getElementById(`edit-err-${id}`);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/site_users?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      },
+      body: JSON.stringify({ role, pages })
+    });
+    if (res.ok) { await loadSiteUsers(); }
+    else if (errEl) errEl.textContent = 'Save failed.';
   }
 
   async function createSiteUser(e) {
