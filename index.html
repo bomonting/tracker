@@ -1344,7 +1344,7 @@
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
           <div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px 16px">
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Owner</div>
-            <div style="font-size:15px;font-weight:600;color:#fff">${info.owner || '—'}</div>
+            <div style="font-size:15px;font-weight:600;color:#fff">${info.owner || '—'}${(() => { const ownerUser = allUsers.find(u => u.name === info.owner); return ownerUser && ownerUser.family ? ` <span style="font-size:11px;color:var(--muted);font-weight:400">(${ownerUser.family})</span>` : ''; })()}</div>
           </div>
           <div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px 16px">
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Profit</div>
@@ -1383,7 +1383,7 @@
           return `<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">
             <td style="padding:6px 12px;color:var(--muted);white-space:nowrap">${time}</td>
             <td style="padding:6px 12px;color:${fColor};font-weight:500">${fLabel}</td>
-            <td colspan="2" style="padding:6px 12px"><span style="color:var(--rose)">${l.old_val || '—'}</span><span style="color:var(--muted);margin:0 8px">→</span><span style="color:var(--green)">${l.new_val || '—'}</span></td>
+            <td colspan="2" style="padding:6px 12px"><span style="color:var(--rose)">${l.old_val || '—'}${l.field === 'owner' ? (() => { const u = allUsers.find(u => u.name === l.old_val); return u && u.family ? ` <span style="color:var(--muted);font-size:10px">(${u.family})</span>` : ''; })() : ''}</span><span style="color:var(--muted);margin:0 8px">→</span><span style="color:var(--green)">${l.new_val || '—'}${l.field === 'owner' ? (() => { const u = allUsers.find(u => u.name === l.new_val); return u && u.family ? ` <span style="color:var(--muted);font-size:10px">(${u.family})</span>` : ''; })() : ''}</span></td>
           </tr>`;
         }).join('');
         return `<div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:10px">Change History</div>
