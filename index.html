@@ -1356,7 +1356,7 @@
             const delta  = (oldAmt !== null && newAmt !== null) ? newAmt - oldAmt : null;
             const won    = delta !== null && delta >= 0;
             const deltaStr = delta !== null
-              ? `<span style="color:${won ? 'var(--green)' : 'var(--rose)'};font-size:11px;margin-left:8px">(${won ? 'Won' : 'Lost'} $${Math.abs(delta).toLocaleString()})</span>`
+              ? `<span style="color:${won ? 'var(--green)' : 'var(--rose)'};font-size:11px;margin-left:8px">(${won ? 'Won' : 'Lost'} $${Math.abs(delta).toLocaleString('en-US')})</span>`
               : '';
             return `<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">
               <td style="padding:6px 12px;color:var(--muted);white-space:nowrap">${time}</td>
@@ -1369,8 +1369,7 @@
           return `<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">
             <td style="padding:6px 12px;color:var(--muted);white-space:nowrap">${time}</td>
             <td style="padding:6px 12px;color:${fColor};font-weight:500">${fLabel}</td>
-            <td style="padding:6px 12px;color:var(--rose)">${l.old_val || '—'}</td>
-            <td style="padding:6px 12px;color:var(--green)">${l.new_val || '—'}</td>
+            <td colspan="2" style="padding:6px 12px"><span style="color:var(--rose)">${l.old_val || '—'}</span><span style="color:var(--muted);margin:0 8px">→</span><span style="color:var(--green)">${l.new_val || '—'}</span></td>
           </tr>`;
         }).join('');
         return `<div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:10px">Change History</div>
