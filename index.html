@@ -319,15 +319,166 @@
   @media (min-width: 769px) {
     .mob-nav { display: none; }
   }
+
+  /* ── LOGIN OVERLAY ── */
+  #login-overlay {
+    position:fixed; inset:0; z-index:99999;
+    background:#0a0a0c;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .login-box {
+    width:360px; padding:40px 36px;
+    background:#111114; border:1px solid #252530; border-radius:10px;
+    box-shadow:0 8px 48px rgba(0,0,0,0.8);
+  }
+  .login-logo {
+    font-family:'Exo 2',sans-serif; font-size:26px; font-weight:700;
+    letter-spacing:3px; color:var(--red); text-align:center; margin-bottom:6px;
+  }
+  .login-sub { text-align:center; font-size:11px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:32px; }
+  .login-field { margin-bottom:16px; }
+  .login-field label { display:block; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+  .login-field input {
+    width:100%; background:var(--bg3); border:1px solid var(--border);
+    border-radius:5px; padding:10px 14px;
+    color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; outline:none;
+  }
+  .login-field input:focus { border-color:var(--red); }
+  .login-btn {
+    width:100%; padding:11px; background:var(--red); border:none; border-radius:5px;
+    color:#fff; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600;
+    cursor:pointer; letter-spacing:1px; margin-top:8px; transition:opacity .15s;
+  }
+  .login-btn:hover { opacity:.85; }
+  .login-btn:disabled { opacity:.5; cursor:default; }
+  .login-error { color:var(--rose); font-size:12px; text-align:center; margin-top:10px; min-height:18px; }
+
+  /* ── ADMIN PANEL ── */
+  #admin-panel {
+    position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,0.75); backdrop-filter:blur(3px);
+    display:none; align-items:flex-start; justify-content:center;
+    padding-top:60px;
+  }
+  .admin-box {
+    width:520px; max-height:80vh; overflow-y:auto;
+    background:#111114; border:1px solid #252530; border-radius:10px;
+    box-shadow:0 8px 48px rgba(0,0,0,0.9);
+    display:flex; flex-direction:column;
+  }
+  .admin-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 24px; border-bottom:1px solid var(--border);
+    position:sticky; top:0; background:#111114; z-index:1;
+  }
+  .admin-title { font-family:'Exo 2',sans-serif; font-size:18px; font-weight:700; letter-spacing:2px; color:var(--red); }
+  .admin-close { background:none; border:1px solid #333; border-radius:4px; color:#666; cursor:pointer; padding:4px 10px; font-size:16px; }
+  .admin-close:hover { border-color:var(--rose); color:var(--rose); }
+  .admin-section { padding:20px 24px; border-bottom:1px solid #1a1a20; }
+  .admin-section-title { font-size:11px; text-transform:uppercase; letter-spacing:2px; color:var(--muted); margin-bottom:14px; }
+  .admin-user-item {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 12px; border-radius:5px; margin-bottom:6px;
+    background:rgba(255,255,255,0.02); border:1px solid #1e1e26;
+  }
+  .admin-user-info { display:flex; align-items:center; gap:10px; }
+  .admin-user-name { font-size:14px; color:var(--text); font-weight:500; }
+  .admin-user-role { font-size:10px; text-transform:uppercase; letter-spacing:1px; padding:2px 8px; border-radius:10px; font-weight:600; }
+  .admin-user-role.admin { background:rgba(229,9,20,0.15); color:var(--red); border:1px solid rgba(229,9,20,0.3); }
+  .admin-user-role.user  { background:rgba(79,195,247,0.1); color:var(--cyan); border:1px solid rgba(79,195,247,0.2); }
+  .admin-del-btn { background:none; border:1px solid #333; border-radius:4px; color:#666; cursor:pointer; padding:4px 10px; font-size:12px; }
+  .admin-del-btn:hover { border-color:var(--rose); color:var(--rose); }
+  .admin-self-tag { font-size:11px; color:var(--muted); font-style:italic; }
+  .admin-form { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .admin-form input, .admin-form select {
+    background:var(--bg3); border:1px solid var(--border); border-radius:4px;
+    padding:8px 12px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:13px; outline:none;
+  }
+  .admin-form input:focus, .admin-form select:focus { border-color:var(--red); }
+  .admin-form select { appearance:none; cursor:pointer; }
+  .admin-form-row { grid-column:1/-1; }
+  .admin-create-btn {
+    grid-column:1/-1; padding:9px; background:var(--red); border:none; border-radius:4px;
+    color:#fff; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; transition:opacity .15s;
+  }
+  .admin-create-btn:hover { opacity:.85; }
+  .admin-form-err { grid-column:1/-1; font-size:12px; color:var(--rose); min-height:16px; }
+
+  /* ── HEADER USER CONTROLS ── */
+  .header-user { display:flex; align-items:center; gap:8px; }
+  .header-username { font-size:12px; color:var(--muted); letter-spacing:1px; }
+  .header-btn {
+    padding:4px 12px; border:1px solid var(--border); border-radius:3px;
+    background:none; color:var(--muted); font-family:'DM Sans',sans-serif;
+    font-size:11px; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:all .15s;
+  }
+  .header-btn:hover { border-color:var(--red); color:var(--red); }
+  .header-btn.admin { border-color:rgba(229,9,20,0.4); color:var(--red); }
+  .header-btn.admin:hover { background:rgba(229,9,20,0.1); }
 </style>
 </head>
 <body>
+
+<!-- ── LOGIN OVERLAY ── -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">O<span style="text-decoration:underline;text-underline-offset:5px;text-decoration-thickness:2px">MERT</span>A</div>
+    <div class="login-sub">Tracker · Members Only</div>
+    <form id="login-form" autocomplete="off">
+      <div class="login-field">
+        <label>Username</label>
+        <input type="text" id="login-username" placeholder="Enter username" autofocus>
+      </div>
+      <div class="login-field">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="Enter password">
+      </div>
+      <button class="login-btn" id="login-btn" type="submit">Login</button>
+      <div class="login-error" id="login-error"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ── ADMIN PANEL MODAL ── -->
+<div id="admin-panel">
+  <div class="admin-box">
+    <div class="admin-header">
+      <span class="admin-title">Admin Panel</span>
+      <button class="admin-close" onclick="closeAdminPanel()">✕</button>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">Users</div>
+      <div id="admin-users-list"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">Create New User</div>
+      <form class="admin-form" id="create-user-form" onsubmit="createSiteUser(event)">
+        <input type="text" id="new-username" placeholder="Username" autocomplete="off">
+        <input type="password" id="new-password" placeholder="Password" autocomplete="new-password">
+        <select id="new-role">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <div></div>
+        <button class="admin-create-btn" type="submit">Create User</button>
+        <div class="admin-form-err" id="create-user-error"></div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <header>
   <div class="logo">O<span style="text-decoration:underline;text-underline-offset:6px;text-decoration-thickness:2px">MERT</span>A&nbsp;<span style="font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:400;letter-spacing:3px;color:rgba(255,255,255,0.45);vertical-align:middle">tracker</span></div>
   <div class="header-right">
     <span id="status-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3a9e5f;margin-right:4px;animation:blink 1.4s ease-in-out infinite"></span><span id="status-text">Connecting...</span>
     <span id="last-update"></span>
+    <div class="header-user" style="margin-left:12px">
+      <span class="header-username" id="header-username"></span>
+      <button class="header-btn admin" id="admin-panel-btn" style="display:none" onclick="openAdminPanel()">Admin</button>
+      <button class="header-btn" onclick="logout()">Logout</button>
+    </div>
   </div>
 </header>
 
@@ -1078,6 +1229,164 @@
   loadFeed();
   setInterval(loadUsers, 30000);
   setInterval(loadFeed,  10000);
+</script>
+
+<script>
+  // ── AUTH ──────────────────────────────────────────────────────────────────
+  // Supabase'de oluşturulacak tablo (SQL):
+  // create table site_users (
+  //   id uuid primary key default gen_random_uuid(),
+  //   username text unique not null,
+  //   password_hash text not null,
+  //   role text not null default 'user',
+  //   created_at timestamptz default now()
+  // );
+  // alter table site_users enable row level security;
+  // create policy "allow all" on site_users for all using (true) with check (true);
+
+  const SESSION_KEY = 'ot_session_v1';
+
+  async function sha256(msg) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  function getSession() {
+    try { return JSON.parse(localStorage.getItem(SESSION_KEY)); } catch { return null; }
+  }
+  function setSession(user) { localStorage.setItem(SESSION_KEY, JSON.stringify(user)); }
+  function clearSession() { localStorage.removeItem(SESSION_KEY); }
+
+  async function doLogin(username, password) {
+    const hash = await sha256(password);
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/site_users?username=eq.${encodeURIComponent(username)}&password_hash=eq.${hash}&select=id,username,role`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) return data[0];
+    return null;
+  }
+
+  function applySession() {
+    const session = getSession();
+    const overlay  = document.getElementById('login-overlay');
+    const adminBtn = document.getElementById('admin-panel-btn');
+    const usernameEl = document.getElementById('header-username');
+    if (!session) {
+      overlay.style.display = 'flex';
+    } else {
+      overlay.style.display = 'none';
+      if (usernameEl) usernameEl.textContent = session.username;
+      if (adminBtn)   adminBtn.style.display = session.role === 'admin' ? '' : 'none';
+    }
+  }
+
+  function logout() {
+    clearSession();
+    document.getElementById('admin-panel').style.display = 'none';
+    applySession();
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    const err = document.getElementById('login-error');
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!username || !password) { err.textContent = 'Fill in all fields.'; return; }
+    btn.disabled = true; btn.textContent = 'Logging in...'; err.textContent = '';
+    try {
+      const user = await doLogin(username, password);
+      if (user) { setSession(user); applySession(); }
+      else { err.textContent = 'Invalid username or password.'; }
+    } catch(e) { err.textContent = 'Connection error. Try again.'; }
+    btn.disabled = false; btn.textContent = 'Login';
+  });
+
+  // ── ADMIN PANEL ───────────────────────────────────────────────────────────
+  function openAdminPanel() {
+    const session = getSession();
+    if (!session || session.role !== 'admin') return;
+    document.getElementById('admin-panel').style.display = 'flex';
+    loadSiteUsers();
+  }
+
+  function closeAdminPanel() {
+    document.getElementById('admin-panel').style.display = 'none';
+  }
+
+  // Close on backdrop click
+  document.getElementById('admin-panel').addEventListener('click', function(e) {
+    if (e.target === this) closeAdminPanel();
+  });
+
+  async function loadSiteUsers() {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/site_users?select=id,username,role,created_at&order=created_at.asc`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    const users = await res.json();
+    const list = document.getElementById('admin-users-list');
+    const session = getSession();
+    if (!Array.isArray(users) || users.length === 0) {
+      list.innerHTML = '<div style="color:var(--muted);font-size:13px">No users yet.</div>';
+      return;
+    }
+    list.innerHTML = users.map(u => `
+      <div class="admin-user-item">
+        <div class="admin-user-info">
+          <span class="admin-user-name">${u.username}</span>
+          <span class="admin-user-role ${u.role}">${u.role}</span>
+        </div>
+        ${u.username === session.username
+          ? '<span class="admin-self-tag">You</span>'
+          : `<button class="admin-del-btn" onclick="deleteSiteUser('${u.id}','${u.username}')">Delete</button>`
+        }
+      </div>
+    `).join('');
+  }
+
+  async function createSiteUser(e) {
+    e.preventDefault();
+    const username = document.getElementById('new-username').value.trim();
+    const password = document.getElementById('new-password').value;
+    const role     = document.getElementById('new-role').value;
+    const err      = document.getElementById('create-user-error');
+    if (!username || !password) { err.textContent = 'Fill in all fields.'; return; }
+    const hash = await sha256(password);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/site_users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({ username, password_hash: hash, role })
+    });
+    if (res.ok) {
+      document.getElementById('new-username').value = '';
+      document.getElementById('new-password').value = '';
+      err.textContent = '';
+      await loadSiteUsers();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      err.textContent = data.message || data.details || 'Error — username may already exist.';
+    }
+  }
+
+  async function deleteSiteUser(id, username) {
+    if (!confirm(`"${username}" kullanıcısını sil?`)) return;
+    await fetch(`${SUPABASE_URL}/rest/v1/site_users?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    await loadSiteUsers();
+  }
+
+  // ── BOOT ──────────────────────────────────────────────────────────────────
+  applySession();
 </script>
 </body>
 </html>
