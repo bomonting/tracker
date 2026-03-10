@@ -12,15 +12,15 @@
 // @match        https://www.omerta.com.tr/*
 // @grant        GM_setValue
 // @grant        GM_getValue
-// @connect      teajgaxzupruukjvrlql.supabase.co
+// @connect      uabktvfytsabgudxjbxw.supabase.co
 // ==/UserScript==
 
 (function () {
     'use strict';
 
     // ── CONFIG — değiştir ──────────────────────────────────────────────────
-    const SUPABASE_URL = 'https://teajgaxzupruukjvrlql.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlYWpnYXh6dXBydXVranZybHFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NTM1MTMsImV4cCI6MjA4ODMyOTUxM30.0ssSfLJKxaNDhb8Wo9QWDfHd-4tRaK6Vu9R6FWkEn_U';
+    const SUPABASE_URL = 'https://uabktvfytsabgudxjbxw.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_IuAEcQBBiVxVKIbR5Kg6Fg_jdCUP0IY';
     const POLL_INTERVAL = 60 * 1000;
     // ──────────────────────────────────────────────────────────────────────
 
@@ -74,7 +74,7 @@
                         'Content-Type': 'application/json',
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Prefer': 'resolution=merge-duplicates'
+                        'Prefer': 'resolution=merge-duplicates,return=minimal'
                     },
                     body: JSON.stringify(batch)
                 });
@@ -461,7 +461,7 @@
                             'Content-Type': 'application/json',
                             'apikey': SUPABASE_KEY,
                             'Authorization': `Bearer ${SUPABASE_KEY}`,
-                            'Prefer': 'resolution=merge-duplicates'
+                            'Prefer': 'resolution=merge-duplicates,return=minimal'
                         },
                         body: JSON.stringify(familyRows)
                     });

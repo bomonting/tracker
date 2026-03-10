@@ -656,8 +656,8 @@
 
 <script>
   // ── CONFIG — değiştir ────────────────────────────────────────────────────
-  const SUPABASE_URL = 'https://teajgaxzupruukjvrlql.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlYWpnYXh6dXBydXVranZybHFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NTM1MTMsImV4cCI6MjA4ODMyOTUxM30.0ssSfLJKxaNDhb8Wo9QWDfHd-4tRaK6Vu9R6FWkEn_U';
+  const SUPABASE_URL = 'https://uabktvfytsabgudxjbxw.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_IuAEcQBBiVxVKIbR5Kg6Fg_jdCUP0IY';
   // ─────────────────────────────────────────────────────────────────────────
 
   const PLATING_ORDER  = ['Very High','High','Medium','Low','Very Low'];
@@ -717,7 +717,7 @@
       let from = 0;
       const pageSize = 1000;
       while (true) {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*&order=name`, {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=id,name,family,rank,plating&order=name`, {
           headers: {
             'apikey': SUPABASE_KEY,
             'Authorization': `Bearer ${SUPABASE_KEY}`,
@@ -772,7 +772,7 @@
       }
     } catch(e) {}
   }
-  setInterval(checkHeartbeat, 10000);
+  setInterval(checkHeartbeat, 30000);
   checkHeartbeat();
       document.getElementById('last-update').textContent = '';
 
@@ -1387,7 +1387,7 @@
   loadUsers();
   loadFeed();
   setInterval(loadUsers, 30000);
-  setInterval(loadFeed,  10000);
+  setInterval(loadFeed,  20000);
   // Casino verisi: dropdown'ı seçimi koruyarak yenile
   setInterval(() => { if (currentView === 'casinos') loadCasinoTables(); }, 30000);
 </script>
