@@ -528,6 +528,11 @@
         if (!document.hidden) { poll(); pollStats(); }
     });
 
+    // Lackey otomatik aktifleştirme — sayfadaki işaretlenmemiş checkbox'ları tıkla
+    setTimeout(() => {
+        document.querySelectorAll('input[type="checkbox"]:not(:checked)').forEach(cb => cb.click());
+    }, 1500);
+
     // İlk çalıştırma
     pollStats();
     setTimeout(schedulePoll, 2000);
