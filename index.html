@@ -292,9 +292,10 @@
     .families-grid { grid-template-columns: 1fr; gap: 8px; }
     .family-members { max-height: none; }
 
-    /* War: stack vertically */
+    /* War: hide team panels on mobile, list takes full width */
     .war-main { flex-direction: column; }
-    .war-team-col { flex-direction: column; }
+    .war-team-col { display: none; }
+    .war-list-col { flex: 1; }
 
     /* Bottom nav */
     .mob-nav {
@@ -956,9 +957,9 @@
         statParts.push(`<b>${s.brug}</b>B`, `<b>${s.chief}</b>C`, `<b>${s.lc}</b>LC`);
         return `<div class="war-row ${rowClass}">
           <span class="war-fam-name">${famName}</span>
+          <span class="war-pts" style="flex-shrink:0"><b>${score}</b></span>
           ${cityBadge}
           <span class="war-stats">${statParts.join(' ')}</span>
-          <span class="war-pts"><b>${score}</b></span>
           <div class="war-btns">
             <button class="war-btn green ${isGreen?'active':''}" onclick="setWarTeam('${famName}','green')">G</button>
             <button class="war-btn red   ${isRed  ?'active':''}" onclick="setWarTeam('${famName}','red')">R</button>
@@ -966,27 +967,7 @@
         </div>`;
       }).join('');
 
-    // VS bar scores
-    const greenTot = [...warGreen].reduce((a,f)=>{ const s=warFamStats(f); return a+warFamScore(s); },0);
-    const redTot   = [...warRed  ].reduce((a,f)=>{ const s=warFamStats(f); return a+warFamScore(s); },0);
-    const total = greenTot + redTot || 1;
-    const greenPct = Math.max(10, Math.round(greenTot/total*100));
-    const redPct   = Math.max(10, 100 - greenPct);
-
-    const vsBar = `<div class="war-vs-bar">
-      <div class="war-vs-green" style="flex:${greenPct}">
-        <span class="war-vs-score">${greenTot}</span>
-        <span class="war-vs-label">Green</span>
-      </div>
-      <div class="war-vs-mid"><span>VS</span></div>
-      <div class="war-vs-red" style="flex:${redPct}">
-        <span class="war-vs-label">Red</span>
-        <span class="war-vs-score">${redTot}</span>
-      </div>
-    </div>`;
-
     el.innerHTML = `<div class="war-layout">
-      ${vsBar}
       <div class="war-main">
         <div class="war-list-col">${famList || '<div class="empty-state">No families found</div>'}</div>
         <div class="war-team-col">
