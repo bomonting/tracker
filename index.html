@@ -1444,7 +1444,7 @@
       // Sayfa erişim kısıtlamaları (admin her şeyi görür)
       const allowed = session.role === 'admin'
         ? ['families','users','war','casinos']
-        : (session.pages || 'families,users,war').split(',').map(p => p.trim());
+        : (Array.isArray(session.pages) ? session.pages : (session.pages || '').split(',').map(p => p.trim()).filter(Boolean));
 
       document.querySelectorAll('.filter-btn[data-view]').forEach(btn => {
         btn.style.display = allowed.includes(btn.dataset.view) ? '' : 'none';
@@ -1515,8 +1515,7 @@
     }
     const PAGE_LABELS = { families:'Families', users:'All Users', war:'War', casinos:'Casinos' };
     list.innerHTML = users.map(u => {
-      const pageStr = u.role === 'admin' ? 'all' : (u.pages || 'families,users,war');
-      const pagesList = pageStr === 'all' ? Object.keys(PAGE_LABELS) : pageStr.split(',').map(p => p.trim());
+      const pagesList = u.role === 'admin' ? Object.keys(PAGE_LABELS) : (Array.isArray(u.pages) ? u.pages : (u.pages || '').split(',').map(p => p.trim()).filter(Boolean));
       const isSelf = u.username === session.username;
       const checkboxes = Object.entries(PAGE_LABELS).map(([val, label]) =>
         `<label style="display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--muted);font-size:11px;white-space:nowrap">
@@ -1566,7 +1565,7 @@
 
   async function saveEditUser(id) {
     const role   = document.getElementById(`edit-role-${id}`)?.value;
-    const pages  = [...document.querySelectorAll(`#edit-pages-${id} input:checked`)].map(c => c.dataset.page).join(',') || 'families';
+    const pages  = [...document.querySelectorAll(`#edit-pages-${id} input:checked`)].map(c => c.dataset.page);
     const errEl  = document.getElementById(`edit-err-${id}`);
     const res = await fetch(`${SUPABASE_URL}/rest/v1/site_users?id=eq.${id}`, {
       method: 'PATCH',
@@ -1586,7 +1585,7 @@
     const username = document.getElementById('new-username').value.trim();
     const password = document.getElementById('new-password').value;
     const role     = document.getElementById('new-role').value;
-    const pages    = [...document.querySelectorAll('#new-pages input:checked')].map(c => c.value).join(',') || 'families';
+    const pages    = [...document.querySelectorAll('#new-pages input:checked')].map(c => c.value);
     const err      = document.getElementById('create-user-error');
     if (!username || !password) { err.textContent = 'Fill in all fields.'; return; }
     const hash = await sha256(password);
