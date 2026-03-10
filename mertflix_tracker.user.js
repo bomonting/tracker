@@ -260,6 +260,7 @@
         });
     }
 
+    let gameLoggedIn = false; // oyun sayfasından gerçek veri geliyor mu
     let famIds = load('mf_fam_ids_v1', []); // [{id, name, city}]
     let famMemberCounts = load('mf_fam_counts_v1', {});
     // Eğer tüm değerler 0 ise bozuk cache, temizle
@@ -370,7 +371,9 @@
                 save(KEY_SNAP, snapshot);
                 await Promise.all(pendingEvents.map(([type, data]) => fireEvent(type, data)));
             }
-            sbUpsert('users', [{ id: '_heartbeat', name: '_heartbeat', updated_at: new Date().toISOString() }]);
+            if (gameLoggedIn) {
+                sbUpsert('users', [{ id: '_heartbeat', name: '_heartbeat', updated_at: new Date().toISOString() }]);
+            }
 
             dotEl.className     = 'active';
             countEl.textContent = Object.keys(snapshot).length + ' users tracked';
@@ -423,9 +426,13 @@
                 });
 
                 if (newFamIds.length > 0) {
+                    gameLoggedIn = true;
                     famIds = newFamIds;
                     save('mf_fam_ids_v1', famIds);
                     console.log('[MF] Aile IDs güncellendi:', famIds.length);
+                } else {
+                    gameLoggedIn = false; // aile listesi gelmedi = logout ya da login sayfası
+                    console.log('[MF] Aile listesi boş — logout algılandı, heartbeat gönderilmeyecek');
                 }
 
                 // Yeni kurulan aileler
