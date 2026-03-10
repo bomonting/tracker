@@ -872,7 +872,10 @@
 
     if (currentView === 'families') renderFamilies(filtered);
     else if (currentView === 'war') renderWar();
-    else if (currentView === 'casinos') renderCasinos();
+    else if (currentView === 'casinos') {
+      // Don't rebuild the casino view on every filter/reload — only build it once
+      if (!document.getElementById('casino-table-select')) renderCasinos();
+    }
     else renderAllUsers(filtered);
   }
 
@@ -1367,6 +1370,8 @@
   loadFeed();
   setInterval(loadUsers, 30000);
   setInterval(loadFeed,  10000);
+  // Casino verisi: dropdown'ı seçimi koruyarak yenile
+  setInterval(() => { if (currentView === 'casinos') loadCasinoTables(); }, 30000);
 </script>
 
 <script>
