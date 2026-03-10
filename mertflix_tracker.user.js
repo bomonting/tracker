@@ -321,7 +321,7 @@
                         }
                     }
                     snapshot[id] = { name, rank, family: famName, plating: plating.label, platingColor: plating.color };
-                    rows.push({ id, name, rank, family: famName, plating: plating.label, plating_color: plating.color, updated_at: now });
+                    rows.push({ id, name, rank, family: famName, plating: plating.label, updated_at: now });
                 }
             }
 
