@@ -242,6 +242,25 @@
   .war-rank-chip { font-size:10px; color:#555; background:#111; padding:2px 7px; border-radius:3px; }
   .war-rank-chip b { color:#888; }
   .war-empty-team { color:#2a2a2a; font-size:11px; font-style:italic; padding:12px 4px; text-align:center; }
+
+  /* ── WAR COMPARISON BAR ── */
+  #war-bar {
+    position:fixed; bottom:0; left:0; right:0; z-index:150;
+    background:#0c0c0e; border-top:2px solid #1e1e26;
+    padding:10px 20px; display:none; align-items:center; gap:16px;
+  }
+  #war-bar .war-side { flex:1; min-width:0; display:flex; align-items:center; gap:10px; overflow:hidden; }
+  #war-bar .war-side-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; font-weight:700; flex-shrink:0; }
+  #war-bar .war-side-score { font-size:20px; font-weight:800; font-family:'Share Tech Mono',monospace; flex-shrink:0; }
+  #war-bar .war-side-ranks { display:flex; gap:10px; flex-wrap:wrap; flex:1; }
+  #war-bar .war-rank-item { display:inline-flex; align-items:baseline; gap:2px; }
+  #war-bar .war-rank-item b { font-size:14px; font-family:'Share Tech Mono',monospace; }
+  #war-bar .war-rank-item span { font-size:9px; text-transform:uppercase; letter-spacing:0.5px; color:#333; }
+  #war-bar .war-side-clear { flex-shrink:0; background:none; border:1px solid #222; border-radius:3px; color:#333; cursor:pointer; font-size:9px; padding:2px 8px; letter-spacing:1px; text-transform:uppercase; transition:all .15s; }
+  #war-bar .war-side-clear:hover { border-color:#555; color:#555; }
+  #war-bar .war-divider { width:1px; background:#1e1e26; height:36px; flex-shrink:0; align-self:center; }
+  @media (max-width: 768px) { #war-bar { bottom:58px; padding:8px 14px; gap:10px; } }
+
   /* ── MOBILE ── */
   @media (max-width: 768px) {
     body { padding-bottom: 58px; }
@@ -595,6 +614,8 @@
   </button>
 </nav>
 
+<div id="war-bar"></div>
+
 <script>
   function mobNav(view, btn) {
     if (window.innerWidth > 768) return;
@@ -782,6 +803,7 @@
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     applyFilters();
+    updateWarBar();
   }
   function setPlating(p, btn) {
     currentPlating = p;
@@ -967,27 +989,57 @@
         </div>`;
       }).join('');
 
-    el.innerHTML = `<div class="war-layout">
-      <div class="war-main">
-        <div class="war-list-col">${famList || '<div class="empty-state">No families found</div>'}</div>
-        <div class="war-team-col">
-          <div class="war-team-box green">
-            <div class="war-team-header">
-              <span class="war-team-title">⬤ Team Green</span>
-              <button class="war-reset-btn" onclick="warGreen.clear();renderWar()">Reset</button>
-            </div>
-            ${renderWarTeamBox(warGreen, 'green')}
-          </div>
-          <div class="war-team-box red">
-            <div class="war-team-header">
-              <span class="war-team-title">⬤ Team Red</span>
-              <button class="war-reset-btn" onclick="warRed.clear();renderWar()">Reset</button>
-            </div>
-            ${renderWarTeamBox(warRed, 'red')}
-          </div>
-        </div>
-      </div>
+    const hasTeams = warGreen.size > 0 || warRed.size > 0;
+    el.innerHTML = `<div style="padding-bottom:${hasTeams ? '70px' : '0'}">
+      ${famList || '<div class="empty-state">No families found</div>'}
     </div>`;
+    updateWarBar();
+  }
+
+  // ── WAR COMPARISON BAR ────────────────────────────────────────────────────
+  function updateWarBar() {
+    const bar = document.getElementById('war-bar');
+    if (currentView !== 'war' || (warGreen.size === 0 && warRed.size === 0)) {
+      bar.style.display = 'none';
+      return;
+    }
+    const calcTot = (teamSet) => {
+      let t = { gf:0, fl:0, cd:0, brug:0, chief:0, lc:0 };
+      teamSet.forEach(fn => {
+        const s = warFamStats(fn);
+        t.gf+=s.gf; t.fl+=s.fl; t.cd+=s.cd;
+        t.brug+=s.brug; t.chief+=s.chief; t.lc+=s.lc;
+      });
+      return { ...t, score: warFamScore(t) };
+    };
+    const g = calcTot(warGreen);
+    const r = calcTot(warRed);
+    const RANKS = [['GF','gf'],['FL','fl'],['CD','cd'],['Brug','brug'],['Chief','chief'],['LC','lc']];
+
+    const sideHTML = (tot, other, color) => {
+      const sc = color === 'green' ? '#3a9e5f' : '#c0392b';
+      const osc = color === 'green' ? '#c0392b' : '#3a9e5f';
+      const label = color === 'green' ? 'GREEN' : 'RED';
+      const clearFn = color === 'green' ? 'warGreen.clear()' : 'warRed.clear()';
+      const ranks = RANKS.map(([lbl, key]) => {
+        const v = tot[key], ov = other[key];
+        const c = v > ov ? sc : v < ov ? osc : '#444';
+        return `<span class="war-rank-item"><b style="color:${c}">${v}</b><span>${lbl}</span></span>`;
+      }).join('');
+      return `<div class="war-side">
+        <span class="war-side-label" style="color:${sc}">${label}</span>
+        <span class="war-side-score" style="color:${sc}">${tot.score}</span>
+        <div class="war-side-ranks">${ranks}</div>
+        <button class="war-side-clear" onclick="${clearFn};renderWar()">Clear</button>
+      </div>`;
+    };
+
+    bar.style.display = 'flex';
+    bar.innerHTML = `
+      ${sideHTML(g, r, 'green')}
+      <div class="war-divider"></div>
+      ${sideHTML(r, g, 'red')}
+    `;
   }
 
   function renderFamilies(users) {
