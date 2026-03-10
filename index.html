@@ -1336,12 +1336,31 @@
         </div>` : '';
 
       const logsHtml = Array.isArray(logs) && logs.length ? (() => {
+        function parseDollar(s) {
+          if (!s) return null;
+          const n = parseInt(s.replace(/[$,]/g, ''), 10);
+          return isNaN(n) ? null : n;
+        }
         const rows = logs.map(l => {
           const time = new Date(l.created_at).toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
-          const fColor = l.field === 'owner' ? 'var(--purple)' : l.field === 'profit' ? 'var(--gold)' : 'var(--cyan)';
-          const fLabel = l.field === 'owner' ? 'Owner' : l.field === 'profit' ? 'Profit' : 'Max Bet';
+          if (l.field === 'profit') {
+            const oldAmt = parseDollar(l.old_val);
+            const newAmt = parseDollar(l.new_val);
+            const delta  = (oldAmt !== null && newAmt !== null) ? newAmt - oldAmt : null;
+            const won    = delta !== null && delta >= 0;
+            const deltaStr = delta !== null
+              ? `<span style="color:${won ? 'var(--green)' : 'var(--rose)'};font-size:11px;margin-left:8px">(${won ? 'Won' : 'Lost'} $${Math.abs(delta).toLocaleString()})</span>`
+              : '';
+            return `<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">
+              <td style="padding:6px 12px;color:var(--muted);white-space:nowrap">${time}</td>
+              <td style="padding:6px 12px;color:var(--gold);font-weight:500">Profit</td>
+              <td colspan="2" style="padding:6px 12px;color:var(--green)">${l.new_val || '—'}${deltaStr}</td>
+            </tr>`;
+          }
+          const fColor = l.field === 'owner' ? 'var(--purple)' : 'var(--cyan)';
+          const fLabel = l.field === 'owner' ? 'Owner' : 'Max Bet';
           return `<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">
-            <td style="padding:6px 12px;color:var(--muted)">${time}</td>
+            <td style="padding:6px 12px;color:var(--muted);white-space:nowrap">${time}</td>
             <td style="padding:6px 12px;color:${fColor};font-weight:500">${fLabel}</td>
             <td style="padding:6px 12px;color:var(--rose)">${l.old_val || '—'}</td>
             <td style="padding:6px 12px;color:var(--green)">${l.new_val || '—'}</td>
@@ -1353,8 +1372,7 @@
               <tr style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px">
                 <th style="text-align:left;padding:7px 12px;border-bottom:1px solid var(--border)">Time</th>
                 <th style="text-align:left;padding:7px 12px;border-bottom:1px solid var(--border)">Field</th>
-                <th style="text-align:left;padding:7px 12px;border-bottom:1px solid var(--border)">Before</th>
-                <th style="text-align:left;padding:7px 12px;border-bottom:1px solid var(--border)">After</th>
+                <th style="text-align:left;padding:7px 12px;border-bottom:1px solid var(--border)" colspan="2">Value</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
