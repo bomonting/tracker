@@ -208,7 +208,7 @@
   .war-row:hover { border-color:#252525; }
   .war-row.team-green { border-color:#2a5c3a; background:rgba(58,158,95,0.06); }
   .war-row.team-red   { border-color:#5c2a2a; background:rgba(192,57,43,0.06); }
-  .war-fam-name { font-size:12px; font-weight:600; color:#ccc; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .war-fam-name { font-size:12px; font-weight:600; color:#ccc; flex-shrink:0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .war-city-badge { font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:1px; padding:2px 5px; border-radius:3px; border:1px solid; white-space:nowrap; flex-shrink:0; }
   .war-stats { font-size:10px; color:#444; display:flex; gap:6px; white-space:nowrap; }
   .war-stats b { color:#666; }
@@ -983,7 +983,7 @@
         statParts.push(`<b>${s.brug}</b>B`, `<b>${s.chief}</b>C`, `<b>${s.lc}</b>LC`);
         return `<div class="war-row ${rowClass}">
           <span class="war-fam-name">${famName}</span>
-          <span class="war-pts" style="flex-shrink:0"><b>${score}</b></span>
+          <span class="war-pts" style="flex-shrink:0;margin-left:6px;margin-right:auto"><b>${score}</b></span>
           ${cityBadge}
           <span class="war-stats">${statParts.join(' ')}</span>
           <div class="war-btns">
