@@ -535,19 +535,31 @@
         if (!document.hidden) { poll(); pollStats(); }
     });
 
-    // Lackey otomatik aktifleştirme — cb-lb checkbox DOM'a eklenince hemen tıkla
-    function clickCbLb() {
-        document.querySelectorAll('label.cb-lb').forEach(label => {
+    // Lackey otomatik aktifleştirme — tüm shadow root'ları recursive tara
+    function searchAndClick(root) {
+        root.querySelectorAll('label.cb-lb').forEach(label => {
             const cb = label.querySelector('input[type="checkbox"]');
             if (cb && !cb.checked) {
                 const visual = label.querySelector('span.cb-i');
                 (visual || label).click();
-                console.log('[MF] Lackey checkbox tıklandı');
+                console.log('[MF] Lackey checkbox tıklandı', label);
             }
         });
+        root.querySelectorAll('*').forEach(el => {
+            if (el.shadowRoot) searchAndClick(el.shadowRoot);
+        });
     }
-    clickCbLb(); // sayfa yüklenince bir kez dene
-    new MutationObserver(clickCbLb).observe(document.body, { childList: true, subtree: true });
+
+    // Her saniye 30 saniye boyunca tara, sonra her 10 saniyede bir
+    let lackeyScanCount = 0;
+    function lackeyScan() {
+        searchAndClick(document);
+        lackeyScanCount++;
+        const next = lackeyScanCount < 30 ? 1000 : 10000;
+        setTimeout(lackeyScan, next);
+    }
+    window.addEventListener('DOMContentLoaded', lackeyScan);
+    setTimeout(lackeyScan, 500); // DOMContentLoaded beklemeden de dene
 
     // İlk çalıştırma
     pollStats();
