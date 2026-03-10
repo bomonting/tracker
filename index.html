@@ -1289,8 +1289,15 @@
       }
       const prev = sel.value;
       const isClosed = t => t.profit?.toLowerCase().includes('gambling office') || t.max_bet?.toLowerCase().includes('gambling office');
+      const TYPE_ORDER = ['Blackjack Tables','Number Games','Punto Banco Tables','Roulette Tables','Slotmachines'];
+      const getType = t => { const m = t.name.match(/\(([^)]+)\)$/); return m ? m[1] : ''; };
+      const grouped = {};
+      TYPE_ORDER.forEach(type => { grouped[type] = []; });
+      data.forEach(t => { const type = getType(t); if (grouped[type]) grouped[type].push(t); });
       sel.innerHTML = '<option value="">Select a table...</option>' +
-        data.map(t => `<option value="${t.id}">${isClosed(t) ? '[CLOSED] ' : ''}${t.name}</option>`).join('');
+        TYPE_ORDER.filter(type => grouped[type].length).map(type =>
+          `<optgroup label="${type}">${grouped[type].map(t => `<option value="${t.id}">${isClosed(t) ? '[CLOSED] ' : ''}${t.name.replace(/ \([^)]+\)$/, '')}</option>`).join('')}</optgroup>`
+        ).join('');
       window._casinoData = {};
       data.forEach(t => { window._casinoData[t.id] = t; });
       if (statusEl) statusEl.textContent = data.length + ' tables';
