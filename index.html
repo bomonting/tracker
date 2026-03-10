@@ -485,6 +485,7 @@
           <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted)"><input type="checkbox" value="families" checked> Families</label>
           <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted)"><input type="checkbox" value="users" checked> All Users</label>
           <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted)"><input type="checkbox" value="war" checked> War Scenario</label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted)"><input type="checkbox" value="casinos" checked> Casinos</label>
         </div>
         <button class="admin-create-btn" type="submit">Create User</button>
         <div class="admin-form-err" id="create-user-error"></div>
@@ -515,6 +516,7 @@
       <button class="filter-btn active" data-view="families" onclick="setView('families',this)">Families</button>
       <button class="filter-btn" data-view="users" onclick="setView('users',this)">All Users</button>
       <button class="filter-btn" data-view="war" onclick="setView('war',this)">War Scenario</button>
+      <button class="filter-btn" data-view="casinos" onclick="setView('casinos',this)">Casinos</button>
     </div>
 
     <!-- Filter row -->
@@ -616,6 +618,10 @@
   <button class="mob-nav-btn" data-view="war" onclick="mobNav('war',this)">
     <svg viewBox="0 0 24 24"><path d="M14.5 2.5c0 1.5-1.5 4-2.5 5.5-1-1.5-2.5-4-2.5-5.5a2.5 2.5 0 015 0z"/><path d="M12 8v13M8 21h8M5 10l7-2 7 2"/></svg>
     War
+  </button>
+  <button class="mob-nav-btn" data-view="casinos" onclick="mobNav('casinos',this)">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M16.9 16.9l1.5 1.5M18.4 5.6l-1.4 1.4M7.1 16.9l-1.5 1.5"/></svg>
+    Casinos
   </button>
   <button class="mob-nav-btn" onclick="mobNav('events',this)">
     <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
@@ -866,6 +872,7 @@
 
     if (currentView === 'families') renderFamilies(filtered);
     else if (currentView === 'war') renderWar();
+    else if (currentView === 'casinos') renderCasinos();
     else renderAllUsers(filtered);
   }
 
@@ -1238,6 +1245,123 @@
     }).join('');
   }
 
+  // ── CASINO VIEW ───────────────────────────────────────────────────────────
+  // SQL to create tables in Supabase:
+  // create table casinos (id text primary key, name text, owner text, profit text, max_bet text, updated_at timestamptz default now());
+  // create table casino_logs (id bigint generated always as identity primary key, casino_id text, casino_name text, field text, old_val text, new_val text, created_at timestamptz default now());
+  // alter table casinos enable row level security;
+  // alter table casino_logs enable row level security;
+  // create policy "allow all" on casinos for all using (true) with check (true);
+  // create policy "allow all" on casino_logs for all using (true) with check (true);
+
+  function renderCasinos() {
+    const el = document.getElementById('main-content');
+    el.innerHTML = `
+      <div style="max-width:720px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+          <div class="select-wrap" style="min-width:240px">
+            <select id="casino-table-select" onchange="loadCasinoDetail()">
+              <option value="">Select a table...</option>
+            </select>
+          </div>
+          <span id="casino-load-status" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+        <div id="casino-detail"></div>
+      </div>`;
+    loadCasinoTables();
+  }
+
+  async function loadCasinoTables() {
+    const statusEl = document.getElementById('casino-load-status');
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/casinos?select=id,name,owner,profit,max_bet,updated_at&order=name`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      const data = await res.json();
+      const sel = document.getElementById('casino-table-select');
+      if (!sel) return;
+      if (!Array.isArray(data) || !data.length) {
+        if (statusEl) statusEl.textContent = 'No tables found';
+        return;
+      }
+      const prev = sel.value;
+      const isClosed = t => t.profit?.toLowerCase().includes('gambling office') || t.max_bet?.toLowerCase().includes('gambling office');
+      sel.innerHTML = '<option value="">Select a table...</option>' +
+        data.map(t => `<option value="${t.id}">${isClosed(t) ? '[CLOSED] ' : ''}${t.name}</option>`).join('');
+      window._casinoData = {};
+      data.forEach(t => { window._casinoData[t.id] = t; });
+      if (statusEl) statusEl.textContent = data.length + ' tables';
+      if (prev && window._casinoData[prev]) { sel.value = prev; loadCasinoDetail(); }
+    } catch(e) {
+      if (statusEl) statusEl.textContent = 'Error loading tables';
+    }
+  }
+
+  async function loadCasinoDetail() {
+    const sel = document.getElementById('casino-table-select');
+    const el  = document.getElementById('casino-detail');
+    if (!sel || !el) return;
+    if (!sel.value) { el.innerHTML = ''; return; }
+    const id = sel.value;
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px 0">Loading...</div>';
+    const info = window._casinoData?.[id];
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/casino_logs?casino_id=eq.${encodeURIComponent(id)}&order=id.desc&limit=100`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      const logs = await res.json();
+
+      const isClosed = v => v && v.toLowerCase().includes('gambling office');
+      const closed = info && (isClosed(info.profit) || isClosed(info.max_bet));
+      const infoHtml = info ? `
+        ${closed ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:8px 12px;background:rgba(229,115,115,0.08);border:1px solid rgba(229,115,115,0.2);border-radius:5px;font-size:12px;color:var(--rose)">
+          <span>●</span> Gambling Office is closed
+        </div>` : ''}
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px 16px">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Owner</div>
+            <div style="font-size:15px;font-weight:600;color:#fff">${info.owner || '—'}</div>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px 16px">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Profit</div>
+            <div style="font-size:15px;font-weight:600;color:${isClosed(info.profit) ? 'var(--rose)' : 'var(--gold)'}">${isClosed(info.profit) ? 'Closed' : (info.profit || '—')}</div>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px 16px">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Max Bet</div>
+            <div style="font-size:15px;font-weight:600;color:${isClosed(info.max_bet) ? 'var(--rose)' : 'var(--cyan)'}">${isClosed(info.max_bet) ? 'Closed' : (info.max_bet || '—')}</div>
+          </div>
+        </div>` : '';
+
+      const logsHtml = Array.isArray(logs) && logs.length ? (() => {
+        const rows = logs.map(l => {
+          const time = new Date(l.created_at).toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+          const fColor = l.field === 'owner' ? 'var(--purple)' : l.field === 'profit' ? 'var(--gold)' : 'var(--cyan)';
+          const fLabel = l.field === 'owner' ? 'Owner' : l.field === 'profit' ? 'Profit' : 'Max Bet';
+          return `<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">
+            <td style="padding:6px 12px;color:var(--muted)">${time}</td>
+            <td style="padding:6px 12px;color:${fColor};font-weight:500">${fLabel}</td>
+            <td style="padding:6px 12px;color:var(--rose)">${l.old_val || '—'}</td>
+            <td style="padding:6px 12px;color:var(--green)">${l.new_val || '—'}</td>
+          </tr>`;
+        }).join('');
+        return `<div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:10px">Change History</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px">
+                <th style="text-align:left;padding:7px 12px;border-bottom:1px solid var(--border)">Time</th>
+                <th style="text-align:left;padding:7px 12px;border-bottom:1px solid var(--border)">Field</th>
+                <th style="text-align:left;padding:7px 12px;border-bottom:1px solid var(--border)">Before</th>
+                <th style="text-align:left;padding:7px 12px;border-bottom:1px solid var(--border)">After</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      })() : '<div class="empty-state" style="padding:30px 0">No changes logged yet</div>';
+
+      el.innerHTML = infoHtml + logsHtml;
+    } catch(e) { el.innerHTML = '<div class="empty-state">Error loading data</div>'; }
+  }
+
   // ── INIT ──────────────────────────────────────────────────────────────────
   loadUsers();
   loadFeed();
@@ -1296,7 +1420,7 @@
 
       // Sayfa erişim kısıtlamaları (admin her şeyi görür)
       const allowed = session.role === 'admin'
-        ? ['families','users','war']
+        ? ['families','users','war','casinos']
         : (session.pages || 'families,users,war').split(',').map(p => p.trim());
 
       document.querySelectorAll('.filter-btn[data-view]').forEach(btn => {

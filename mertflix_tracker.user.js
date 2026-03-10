@@ -263,6 +263,7 @@
     let gameLoggedIn = false; // oyun sayfasından gerçek veri geliyor mu
     let famIds = load('mf_fam_ids_v1', []); // [{id, name, city}]
     let famMemberCounts = load('mf_fam_counts_v1', {});
+    let casinoSnapshot = load('mf_casino_snap_v1', {}); // casino_id -> { owner, profit, max_bet }
     // Eğer tüm değerler 0 ise bozuk cache, temizle
     if (Object.keys(famMemberCounts).length > 0 && Object.values(famMemberCounts).every(v => v === 0)) {
         famMemberCounts = {};
@@ -512,6 +513,80 @@
                     console.log('[MF] Family downed:', fname);
                 }
             } catch(e) { console.warn('[MF] dead family error:', e); }
+
+            // ── CASINO PARSE ──────────────────────────────────────────────
+            try {
+                const TYPE_MAP = {
+                    'Blackjack Tables':   'blackjack',
+                    'Number Games':       'number',
+                    'Punto Banco Tables': 'punto_banco',
+                    'Roulette Tables':    'roulette',
+                    'Slotmachines':       'slots'
+                };
+                const casinoRows = [];
+                const casinoLogEntries = [];
+                const now = new Date().toISOString();
+
+                for (const [typeName, typeSlug] of Object.entries(TYPE_MAP)) {
+                    // Find the header element for this section
+                    let headerEl = null;
+                    for (const el of dDoc.querySelectorAll('b, strong')) {
+                        if (el.textContent.trim() === typeName) { headerEl = el; break; }
+                    }
+                    if (!headerEl) {
+                        for (const el of dDoc.querySelectorAll('th, td')) {
+                            if (el.textContent.trim() === typeName) { headerEl = el; break; }
+                        }
+                    }
+                    if (!headerEl) continue;
+
+                    // Get the table — either the one containing the header, or the next one after it
+                    let tbl = headerEl.closest('table');
+                    if (!tbl) {
+                        let s = headerEl.parentElement;
+                        while (s && s.tagName !== 'BODY') {
+                            s = s.nextElementSibling;
+                            if (!s) break;
+                            if (s.tagName === 'TABLE') { tbl = s; break; }
+                            const inner = s.querySelector('table');
+                            if (inner) { tbl = inner; break; }
+                        }
+                    }
+                    if (!tbl) continue;
+
+                    tbl.querySelectorAll('tr').forEach(row => {
+                        const cells = row.querySelectorAll('td');
+                        if (cells.length < 4) return;
+                        const location = cells[0].textContent.trim();
+                        const owner    = cells[1].textContent.trim();
+                        const maxBet   = cells[2].textContent.trim();
+                        // Column layout: City | Owner | Max Bet | Min Bet | Profit | [Raid]
+                        const profit   = (cells[4] || cells[3]).textContent.trim();
+                        if (!location || location === 'City:' || owner === 'Owner:' || owner === 'Maximum Bet:') return;
+
+                        const id = `${typeSlug}_${location.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'')}`;
+                        const cName = `${location} (${typeName})`;
+                        const prev = casinoSnapshot[id];
+                        if (prev) {
+                            if (prev.owner   !== owner   && owner   && prev.owner)   casinoLogEntries.push({ casino_id: id, casino_name: cName, field: 'owner',   old_val: prev.owner,   new_val: owner });
+                            if (prev.profit  !== profit  && profit  && prev.profit)  casinoLogEntries.push({ casino_id: id, casino_name: cName, field: 'profit',  old_val: prev.profit,  new_val: profit });
+                            if (prev.max_bet !== maxBet  && maxBet  && prev.max_bet) casinoLogEntries.push({ casino_id: id, casino_name: cName, field: 'max_bet', old_val: prev.max_bet, new_val: maxBet });
+                        }
+                        casinoSnapshot[id] = { owner, profit, max_bet: maxBet };
+                        casinoRows.push({ id, name: cName, owner, profit, max_bet: maxBet, updated_at: now });
+                    });
+                }
+
+                if (casinoRows.length > 0) {
+                    save('mf_casino_snap_v1', casinoSnapshot);
+                    sbUpsert('casinos', casinoRows);
+                    for (const log of casinoLogEntries) {
+                        await sbInsert('casino_logs', log);
+                        console.log(`[MF Casino] ${log.casino_name}: ${log.field} ${log.old_val} → ${log.new_val}`);
+                    }
+                    console.log('[MF Casino] Synced', casinoRows.length, 'tables');
+                }
+            } catch(e) { console.warn('[MF] casino parse error:', e); }
 
         } catch(e) { console.warn('[MF] stats poll error:', e); }
     }
