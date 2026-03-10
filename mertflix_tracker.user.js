@@ -528,10 +528,16 @@
         if (!document.hidden) { poll(); pollStats(); }
     });
 
-    // Lackey otomatik aktifleştirme — sayfadaki işaretlenmemiş checkbox'ları tıkla
+    // Lackey otomatik aktifleştirme — cb-lb checkbox'larını tıkla
     setTimeout(() => {
-        document.querySelectorAll('input[type="checkbox"]:not(:checked)').forEach(cb => cb.click());
-    }, 1500);
+        document.querySelectorAll('label.cb-lb').forEach(label => {
+            const cb = label.querySelector('input[type="checkbox"]');
+            if (cb && !cb.checked) {
+                const visual = label.querySelector('span.cb-i');
+                (visual || label).click();
+            }
+        });
+    }, 2500);
 
     // İlk çalıştırma
     pollStats();
