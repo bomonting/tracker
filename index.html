@@ -480,11 +480,11 @@
           <option value="user">User</option>
           <option value="admin">Admin</option>
         </select>
-        <div id="new-pages" style="display:flex;gap:14px;align-items:center;font-size:12px;color:var(--muted);grid-column:1/-1;padding:4px 0">
-          <span style="color:var(--fg);font-weight:500">Pages:</span>
-          <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" value="families" checked> Families</label>
-          <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" value="users" checked> All Users</label>
-          <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" value="war" checked> War Scenario</label>
+        <div id="new-pages" class="admin-form-row" style="display:flex;gap:14px;align-items:center;font-size:12px;padding:4px 0">
+          <span style="color:var(--text);font-weight:500;font-size:12px">Pages:</span>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted)"><input type="checkbox" value="families" checked> Families</label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted)"><input type="checkbox" value="users" checked> All Users</label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted)"><input type="checkbox" value="war" checked> War Scenario</label>
         </div>
         <button class="admin-create-btn" type="submit">Create User</button>
         <div class="admin-form-err" id="create-user-error"></div>
