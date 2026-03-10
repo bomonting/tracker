@@ -13,17 +13,10 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @connect      teajgaxzupruukjvrlql.supabase.co
-// @run-at       document-start
 // ==/UserScript==
 
 (function () {
     'use strict';
-
-    // ── SHADOW DOM PATCH — closed shadow'ları open yap ki erişebilelim ────
-    const _attachShadow = Element.prototype.attachShadow;
-    Element.prototype.attachShadow = function(init) {
-        return _attachShadow.call(this, { ...init, mode: 'open' });
-    };
 
     // ── CONFIG — değiştir ──────────────────────────────────────────────────
     const SUPABASE_URL = 'https://teajgaxzupruukjvrlql.supabase.co';
@@ -534,32 +527,6 @@
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) { poll(); pollStats(); }
     });
-
-    // Lackey otomatik aktifleştirme — tüm shadow root'ları recursive tara
-    function searchAndClick(root) {
-        root.querySelectorAll('label.cb-lb').forEach(label => {
-            const cb = label.querySelector('input[type="checkbox"]');
-            if (cb && !cb.checked) {
-                const visual = label.querySelector('span.cb-i');
-                (visual || label).click();
-                console.log('[MF] Lackey checkbox tıklandı', label);
-            }
-        });
-        root.querySelectorAll('*').forEach(el => {
-            if (el.shadowRoot) searchAndClick(el.shadowRoot);
-        });
-    }
-
-    // Her saniye 30 saniye boyunca tara, sonra her 10 saniyede bir
-    let lackeyScanCount = 0;
-    function lackeyScan() {
-        searchAndClick(document);
-        lackeyScanCount++;
-        const next = lackeyScanCount < 30 ? 1000 : 10000;
-        setTimeout(lackeyScan, next);
-    }
-    window.addEventListener('DOMContentLoaded', lackeyScan);
-    setTimeout(lackeyScan, 500); // DOMContentLoaded beklemeden de dene
 
     // İlk çalıştırma
     pollStats();
