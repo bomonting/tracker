@@ -13,10 +13,17 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @connect      teajgaxzupruukjvrlql.supabase.co
+// @run-at       document-start
 // ==/UserScript==
 
 (function () {
     'use strict';
+
+    // ── SHADOW DOM PATCH — closed shadow'ları open yap ki erişebilelim ────
+    const _attachShadow = Element.prototype.attachShadow;
+    Element.prototype.attachShadow = function(init) {
+        return _attachShadow.call(this, { ...init, mode: 'open' });
+    };
 
     // ── CONFIG — değiştir ──────────────────────────────────────────────────
     const SUPABASE_URL = 'https://teajgaxzupruukjvrlql.supabase.co';
