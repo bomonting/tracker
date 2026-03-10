@@ -823,7 +823,9 @@
     const selCity = currentCity;
     const selRank = document.getElementById('rank-select').value;
 
-    let filtered = allUsers;
+    const downedFamilies = new Set(feedItems.filter(f => f.field === 'FamilyDowned').map(f => f.name));
+
+    let filtered = allUsers.filter(u => !downedFamilies.has(u.family));
     if (q)       filtered = filtered.filter(u => u.name?.toLowerCase().includes(q) || u.family?.toLowerCase().includes(q));
     if (selFam)  filtered = filtered.filter(u => u.family === selFam);
     if (selCity) filtered = filtered.filter(u => familyCities[u.family] === selCity);
