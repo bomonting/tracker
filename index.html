@@ -1324,6 +1324,9 @@
       const isClosed = v => v && v.toLowerCase().includes('gambling office');
       const closed = info && (isClosed(info.profit) || isClosed(info.max_bet));
       const infoHtml = info ? `
+        <div style="margin-bottom:14px">
+          <div style="font-family:'Oswald',sans-serif;font-size:18px;font-weight:500;color:#fff;letter-spacing:1px">${info.name || '—'}</div>
+        </div>
         ${closed ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:8px 12px;background:rgba(229,115,115,0.08);border:1px solid rgba(229,115,115,0.2);border-radius:5px;font-size:12px;color:var(--rose)">
           <span>●</span> Gambling Office is closed
         </div>` : ''}
