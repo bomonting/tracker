@@ -1113,13 +1113,24 @@
         </div>
         <div class="family-plating-bar">${platingBar}</div>
         ${rankBar ? `<div style="padding:4px 12px 6px;font-size:10px;display:flex;gap:10px;flex-wrap:wrap">${rankBar}</div>` : ''}
-        <div class="family-members">${memberRows}</div>
+        <div class="family-members" data-fam="${fam}">${memberRows}</div>
       `;
       grid.appendChild(card);
     });
 
+    // Scroll pozisyonlarını kaydet
+    const scrollMap = {};
+    el.querySelectorAll('.family-members[data-fam]').forEach(m => {
+      scrollMap[m.dataset.fam] = m.scrollTop;
+    });
+
     el.innerHTML = '';
     el.appendChild(grid);
+
+    // Scroll pozisyonlarını geri yükle
+    el.querySelectorAll('.family-members[data-fam]').forEach(m => {
+      if (scrollMap[m.dataset.fam]) m.scrollTop = scrollMap[m.dataset.fam];
+    });
   }
 
   // ── RENDER: ALL USERS ─────────────────────────────────────────────────────
