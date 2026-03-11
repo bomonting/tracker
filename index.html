@@ -1324,7 +1324,10 @@
     if (!sel || !el) return;
     if (!sel.value) { el.innerHTML = ''; return; }
     const id = sel.value;
-    el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px 0">Loading...</div>';
+    const isFirstLoad = !el.innerHTML || el.innerHTML.includes('Loading');
+    if (isFirstLoad) el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px 0">Loading...</div>';
+    const scrollParent = document.querySelector('.left-panel') || document.scrollingElement || document.documentElement;
+    const prevScroll = scrollParent.scrollTop;
     const info = window._casinoData?.[id];
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/casino_logs?casino_id=eq.${encodeURIComponent(id)}&order=id.desc&limit=100`, {
@@ -1400,6 +1403,7 @@
       })() : '<div class="empty-state" style="padding:30px 0">No changes logged yet</div>';
 
       el.innerHTML = infoHtml + logsHtml;
+      requestAnimationFrame(() => { scrollParent.scrollTop = prevScroll; });
     } catch(e) { el.innerHTML = '<div class="empty-state">Error loading data</div>'; }
   }
 
