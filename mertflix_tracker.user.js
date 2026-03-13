@@ -935,10 +935,26 @@
             if (i + 55 < users.length) await new Promise(r => setTimeout(r, 500));
         }
 
-        // Supabase'e kaydet
+        // Supabase'e kaydet — kullanıcılar zaten var, PATCH ile güncelle
         if (posRows.length > 0) {
             labelEl.textContent = 'Saving to database...';
-            await sbUpsert('users', posRows);
+            for (let i = 0; i < posRows.length; i += 50) {
+                const batch = posRows.slice(i, i + 50);
+                // Her kullanıcıyı tek tek PATCH et
+                await Promise.all(batch.map(r =>
+                    fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${r.id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`,
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({ position: r.position })
+                    }).catch(e => console.warn(`[MF] pos patch ${r.id}:`, e))
+                ));
+                if (i + 50 < posRows.length) await new Promise(r => setTimeout(r, 300));
+            }
             console.log(`[MF] Position sync done: ${posRows.length}/${total} positions saved`);
         }
 
