@@ -907,19 +907,20 @@
 
         console.log(`[MF] Position sync started: ${total} users`);
 
-        // 55'erli gruplar halinde çek
-        for (let i = 0; i < users.length; i += 55) {
-            if (!settings.positionSync) { // Manuel kapatıldıysa dur
+        // 10'arlı gruplar, arası 2sn (~100 istek/dk, rate limit'e takılmaz)
+        for (let i = 0; i < users.length; i += 10) {
+            if (!settings.positionSync) {
                 console.log('[MF] Position sync cancelled by user');
                 break;
             }
-            const chunk = users.slice(i, i + 55);
+            const chunk = users.slice(i, i + 10);
             await Promise.all(chunk.map(async (u) => {
                 try {
                     const res = await fetch(`/user.php?idn=${u.id}&ajax=true`, {
                         credentials: 'include',
                         headers: { 'X-Requested-With': 'XMLHttpRequest' }
                     });
+                    if (res.status === 429) { console.warn('[MF] rate limited, skipping', u.id); return; }
                     const html = await res.text();
                     const doc = new DOMParser().parseFromString(html, 'text/html');
                     const text = doc.body?.textContent || '';
@@ -933,8 +934,7 @@
                 countEl2.textContent = `${done}/${total}`;
                 barEl.style.width = `${Math.round(done / total * 100)}%`;
             }));
-            // Batch arası küçük bekleme
-            if (i + 55 < users.length) await new Promise(r => setTimeout(r, 500));
+            if (i + 10 < users.length) await new Promise(r => setTimeout(r, 2000));
         }
 
         // Supabase'e kaydet — kullanıcılar zaten var, PATCH ile güncelle
