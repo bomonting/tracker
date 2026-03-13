@@ -1159,6 +1159,8 @@
 
       const memberRows = [...members]
         .sort((a,b) => {
+          const pa = a.position || 999999, pb = b.position || 999999;
+          if (pa !== pb) return pa - pb;
           const rp = (ROLE_PRIORITY[memberRole(a)] ?? 99) - (ROLE_PRIORITY[memberRole(b)] ?? 99);
           if (rp !== 0) return rp;
           const tp = titlePriority(a.name) - titlePriority(b.name);
@@ -1220,7 +1222,7 @@
   function renderAllUsers(users) {
     const el = document.getElementById('main-content');
     if (!users.length) { el.innerHTML = '<div class="empty-state">No users found</div>'; return; }
-    const sorted = [...users].sort((a,b) => { const ri = rankIndex(a.rank)-rankIndex(b.rank); if(ri!==0) return ri; return extractTitle(a.name||'').cleanName.localeCompare(extractTitle(b.name||'').cleanName); });
+    const sorted = [...users].sort((a,b) => { const pa = a.position||999999, pb = b.position||999999; if(pa!==pb) return pa-pb; const ri = rankIndex(a.rank)-rankIndex(b.rank); if(ri!==0) return ri; return extractTitle(a.name||'').cleanName.localeCompare(extractTitle(b.name||'').cleanName); });
     el.innerHTML = `
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead>
