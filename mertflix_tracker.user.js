@@ -141,6 +141,16 @@
         .mf-empty { color:#444; text-align:center; padding:20px 0; font-style:italic; font-size:11px; }
         #mf-footer { padding:5px 10px; border-top:1px solid #1a1a1a; color:#444;
             font-size:10px; display:flex; justify-content:space-between; }
+        .mf-online-dot {
+            display:inline-block; width:8px; height:8px; border-radius:50%;
+            margin-right:3px; vertical-align:middle;
+        }
+        .mf-online-dot.online {
+            background:#4caf50; box-shadow:0 0 4px #4caf50;
+        }
+        .mf-online-dot.offline {
+            background:#555; opacity:0.4;
+        }
     `;
     document.head.appendChild(style);
 
@@ -307,6 +317,11 @@
                     const plating = getPlating(shield?.parentElement);
                     const now = new Date().toISOString();
 
+                    // Online tespiti: #74bef6 = rgb(116, 190, 246)
+                    const linkColor = a.style?.color?.trim() || '';
+                    const isOnline = linkColor === '#74bef6' || linkColor === 'rgb(116, 190, 246)'
+                        || linkColor.includes('74bef6') || linkColor.includes('116, 190, 246');
+
                     const prev = snapshot[id];
                     if (prev) {
                         if (prev.family !== famName) {
@@ -320,8 +335,8 @@
                             pendingEvents.push(['plating', { name, family: famName, field: 'LostPlating', oldVal: prev.plating, newVal: 'None' }]);
                         }
                     }
-                    snapshot[id] = { name, rank, family: famName, plating: plating.label, platingColor: plating.color };
-                    rows.push({ id, name, rank, family: famName, plating: plating.label, updated_at: now });
+                    snapshot[id] = { name, rank, family: famName, plating: plating.label, platingColor: plating.color, is_online: isOnline };
+                    rows.push({ id, name, rank, family: famName, plating: plating.label, is_online: isOnline, updated_at: now });
                 }
             }
 
@@ -589,6 +604,46 @@
             } catch(e) { console.warn('[MF] casino parse error:', e); }
 
         } catch(e) { console.warn('[MF] stats poll error:', e); }
+    }
+
+    // ── ONLINE/OFFLINE INDICATORS ON FAMILY PAGES ─────────────────────────
+    function injectOnlineDots() {
+        // Users: tablosunu bul
+        const tables = document.querySelectorAll('table');
+        for (const table of tables) {
+            if (!table.textContent.includes('Users:')) continue;
+            // Zaten işlenmiş mi?
+            if (table.dataset.mfDots) continue;
+            table.dataset.mfDots = '1';
+
+            for (const a of table.querySelectorAll('a[href*="user.php?idn="]')) {
+                // Zaten dot eklenmişse atla
+                if (a.querySelector('.mf-online-dot')) continue;
+                // #74bef6 = rgb(116, 190, 246) — sitenin online rengi
+                const color = getComputedStyle(a).color;
+                const isOnline = color.includes('116, 190, 246')
+                    || (a.style.color && (a.style.color === '#74bef6' || a.style.color === 'rgb(116, 190, 246)'));
+
+                // Ayrıca link rengi kontrolü: beyaz/gri = offline
+                const dot = document.createElement('span');
+                dot.className = 'mf-online-dot ' + (isOnline ? 'online' : 'offline');
+                dot.title = isOnline ? 'Online' : 'Offline';
+                a.insertBefore(dot, a.firstChild);
+            }
+        }
+    }
+
+    // Sayfa her yüklendiğinde ve periyodik olarak çalıştır
+    function scheduleOnlineDots() {
+        injectOnlineDots();
+        // MutationObserver ile dinamik değişiklikleri yakala
+        const observer = new MutationObserver(() => injectOnlineDots());
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', scheduleOnlineDots);
+    } else {
+        scheduleOnlineDots();
     }
 
     // ── START ─────────────────────────────────────────────────────────────

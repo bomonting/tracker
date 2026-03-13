@@ -137,12 +137,15 @@
   .family-members::-webkit-scrollbar-thumb { background:var(--border); }
   .member-row {
     display:grid;
-    grid-template-columns: 14px 1fr 46px 70px;
+    grid-template-columns: 8px 14px 1fr 46px 70px;
     align-items:center; padding:5px 13px; font-size:13px;
     transition:background .1s; gap:6px;
   }
   .member-row:hover { background:rgba(255,255,255,0.02); }
   .member-row > span:first-child { user-select:none; -webkit-user-select:none; }
+  .online-dot { width:7px; height:7px; border-radius:50%; display:inline-block; }
+  .online-dot.on  { background:#4caf50; box-shadow:0 0 4px #4caf50; }
+  .online-dot.off { background:#333; opacity:0.5; }
   .member-name { color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .member-title { display:flex; justify-content:center; user-select:none; -webkit-user-select:none; }
   .member-rank { color:var(--muted); font-size:10px; white-space:nowrap; text-align:right; user-select:none; -webkit-user-select:none; }
@@ -717,7 +720,7 @@
       let from = 0;
       const pageSize = 1000;
       while (true) {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=id,name,family,rank,plating&order=name`, {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=id,name,family,rank,plating,is_online&order=name`, {
           headers: {
             'apikey': SUPABASE_KEY,
             'Authorization': `Bearer ${SUPABASE_KEY}`,
@@ -1049,6 +1052,7 @@
     grid.className = 'families-grid';
 
     sorted.forEach(([fam, members]) => {
+      const onlineCount = members.filter(m => m.is_online).length;
       const counts = {};
       members.forEach(m => {
         if (m.plating && m.plating !== 'None')
@@ -1056,7 +1060,8 @@
       });
 
       const noneCount = members.filter(m => !m.plating || m.plating === 'None').length;
-      const platingBar = PLATING_ORDER
+      const onlineBadge = `<span class="plating-stat"><span class="online-dot on" style="width:6px;height:6px"></span> <span style="color:#4caf50;font-size:11px">${onlineCount}</span></span>`;
+      const platingBar = onlineBadge + PLATING_ORDER
         .filter(l => counts[l])
         .map(l => `<span class="plating-stat">${shieldSVG(platingColor(l))} <span style="color:${platingColor(l)}">${counts[l]}</span></span>`)
         .join('') + (noneCount ? `<span class="plating-stat">${shieldSVG('#444')} <span style="color:#555">${noneCount}</span></span>` : '')
@@ -1096,6 +1101,7 @@
             ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${TITLE_COLORS[title]}22;color:${TITLE_COLORS[title]};border:1px solid ${TITLE_COLORS[title]}55;flex-shrink:0">${title}</span>`
             : '';
           return `<div class="member-row">
+            <span><span class="online-dot ${m.is_online ? 'on' : 'off'}" title="${m.is_online ? 'Online' : 'Offline'}"></span></span>
             <span>${pCol ? shieldSVG(pCol) : ''}</span>
             <span class="member-name">${cleanName}</span>
             <span class="member-title">${titleTag}</span>
@@ -1157,7 +1163,7 @@
               ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${TITLE_COLORS[title]}22;color:${TITLE_COLORS[title]};border:1px solid ${TITLE_COLORS[title]}55;margin-left:6px">${title}</span>`
               : '';
             return `<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">
-              <td style="padding:6px 12px">${cleanName || '—'}</td>
+              <td style="padding:6px 12px"><span class="online-dot ${u.is_online ? 'on' : 'off'}" style="margin-right:6px" title="${u.is_online ? 'Online' : 'Offline'}"></span>${cleanName || '—'}</td>
               <td style="padding:6px 12px;color:var(--muted);user-select:none;-webkit-user-select:none">${u.rank || '—'}</td>
               <td style="padding:6px 12px;user-select:none;-webkit-user-select:none">${u.family || '—'}${titleBadge}</td>
               <td style="padding:6px 12px;user-select:none;-webkit-user-select:none">${pCol
