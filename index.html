@@ -1142,8 +1142,26 @@
         return idx === -1 ? 99 : idx;
       }
 
+      const fl = familyLeaders[fam] || {};
+      const ROLE_COLORS = { Boss: '#e50914', Sotto: '#4fc3f7', Consig: '#4fc3f7' };
+      function leaderRole(cleanName) {
+        if (fl.boss === cleanName) return 'Boss';
+        if (fl.consig === cleanName) return 'Consig';
+        if (fl.sotto === cleanName) return 'Sotto';
+        return null;
+      }
+      function rolePriority(cleanName) {
+        const r = leaderRole(cleanName);
+        if (r === 'Boss') return 0;
+        if (r === 'Consig') return 1;
+        if (r === 'Sotto') return 2;
+        return 3;
+      }
+
       const memberRows = [...members]
         .sort((a,b) => {
+          const rp = rolePriority(extractTitle(a.name).cleanName) - rolePriority(extractTitle(b.name).cleanName);
+          if (rp !== 0) return rp;
           const tp = titlePriority(a.name) - titlePriority(b.name);
           if (tp !== 0) return tp;
           return rankIndex(a.rank) - rankIndex(b.rank);
@@ -1154,10 +1172,10 @@
           const titleTag = title
             ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${TITLE_COLORS[title]}22;color:${TITLE_COLORS[title]};border:1px solid ${TITLE_COLORS[title]}55;flex-shrink:0">${title}</span>`
             : '';
-          const fl = familyLeaders[fam] || {};
-          const role = fl.boss === cleanName ? 'Boss' : fl.sotto === cleanName ? 'Sotto' : fl.consig === cleanName ? 'Consig' : null;
+          const role = leaderRole(cleanName);
+          const rc = ROLE_COLORS[role];
           const roleBadge = role
-            ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:#e5091422;color:#e50914;border:1px solid #e5091455;flex-shrink:0">${role}</span>`
+            ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:${rc}22;color:${rc};border:1px solid ${rc}55;flex-shrink:0">${role}</span>`
             : '';
           return `<div class="member-row">
             <span>${pCol ? shieldSVG(pCol) : ''}</span>
