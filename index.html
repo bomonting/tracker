@@ -1213,7 +1213,7 @@
               ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${TITLE_COLORS[title]}22;color:${TITLE_COLORS[title]};border:1px solid ${TITLE_COLORS[title]}55;margin-left:6px">${title}</span>`
               : '';
             return `<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">
-              <td style="padding:6px 12px">${u.is_online ? '<span style="color:#4caf50;font-size:7px;margin-right:5px;text-shadow:0 0 4px #4caf50">●</span>' : '<span style="color:#444;font-size:7px;margin-right:5px">●</span>'}${cleanName || '—'}</td>
+              <td style="padding:6px 12px"><span class="online-indicator" style="display:inline-flex;width:16px;height:16px;margin-right:4px;vertical-align:middle" ${u.is_online ? 'data-tip="Online"' : `data-tip="${u.last_seen ? 'Last seen: ' + timeAgo(u.last_seen) : 'Offline'}"`}><span class="dot ${u.is_online ? 'on' : 'off'}"></span></span>${cleanName || '—'}</td>
               <td style="padding:6px 12px;color:var(--muted);user-select:none;-webkit-user-select:none">${u.rank || '—'}</td>
               <td style="padding:6px 12px;user-select:none;-webkit-user-select:none">${u.family || '—'}${titleBadge}</td>
               <td style="padding:6px 12px;user-select:none;-webkit-user-select:none">${pCol
