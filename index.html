@@ -696,6 +696,19 @@
   function platingColor(p) { return PLATING_COLORS[p] || null; }
   function rankIndex(r)    { const i = RANK_ORDER.indexOf(r); return i === -1 ? 99 : i; }
 
+  function timeAgo(dateStr) {
+    if (!dateStr) return '';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    if (diff < 0) return 'just now';
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    const days = Math.floor(hrs / 24);
+    return days + 'd ago';
+  }
+
   function shieldSVG(color) {
     return `<svg width="10" height="11" viewBox="0 0 10 11" fill="${color}" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;flex-shrink:0"><path d="M5 0L0 2v4c0 2.8 2.1 5.4 5 6 2.9-.6 5-3.2 5-6V2L5 0z"/></svg>`;
   }
@@ -731,7 +744,7 @@
       let from = 0;
       const pageSize = 1000;
       while (true) {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=id,name,family,rank,plating,is_online&order=name`, {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=id,name,family,rank,plating,is_online,last_seen&order=name`, {
           headers: {
             'apikey': SUPABASE_KEY,
             'Authorization': `Bearer ${SUPABASE_KEY}`,
@@ -1129,7 +1142,7 @@
             <span class="member-name">${cleanName}</span>
             <span class="member-title">${titleTag}</span>
             <span class="member-rank">${m.rank || ''}</span>
-            <span>${m.is_online ? '<span style="color:#4caf50;font-size:8px;text-shadow:0 0 4px #4caf50">●</span>' : '<span style="color:#333;font-size:8px">●</span>'}</span>
+            <span>${m.is_online ? '<span style="color:#4caf50;font-size:8px;text-shadow:0 0 4px #4caf50" title="Online">●</span>' : `<span style="color:#555;font-size:8px;cursor:help" title="${m.last_seen ? 'Last seen: ' + timeAgo(m.last_seen) : 'Offline'}">●</span>`}</span>
           </div>`;
         }).join('');
 

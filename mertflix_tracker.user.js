@@ -281,6 +281,30 @@
         console.log('[MF] Bozuk count cache temizlendi');
     }
 
+    // ── TRUE ONLINE DETECTION (chat autocomplete endpoint) ────────────────
+    let trueOnlineSet = new Set(); // son 60dk aktif kullanıcılar
+
+    async function fetchTrueOnlineUsers() {
+        try {
+            const res = await fetch('/?module=Services.Account', {
+                credentials: 'include',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await res.json();
+
+            const names = new Set();
+            const users = data.data?.users || [];
+            for (const u of users) {
+                if (u.name) names.add(u.name.trim());
+            }
+            console.log('[MF] True online users:', names.size);
+            trueOnlineSet = names;
+        } catch(e) {
+            console.warn('[MF] Services.Account error:', e);
+            // Hata durumunda eski set'i koru, temizleme
+        }
+    }
+
     // ── FAMILY PAGE FETCH — sadece değişen aileler için ───────────────────
     async function fetchFamilyPage(famId, famName, rows, seenIds, pendingEvents) {
         try {
@@ -317,8 +341,10 @@
                     const plating = getPlating(shield?.parentElement);
                     const now = new Date().toISOString();
 
-                    // Online tespiti: class="text-blue" = online
-                    const isOnline = a.classList.contains('text-blue');
+                    // Online tespiti: trueOnlineSet varsa onu kullan, yoksa text-blue fallback
+                    const isOnline = trueOnlineSet.size > 0
+                        ? trueOnlineSet.has(name)
+                        : a.classList.contains('text-blue');
 
                     const prev = snapshot[id];
                     if (prev) {
@@ -358,6 +384,9 @@
         try {
             if (!famIds.length) { dotEl.className = 'active'; return; }
 
+            // Önce gerçek online kullanıcıları al
+            await fetchTrueOnlineUsers();
+
             const rows = [];
             const seenIds = new Set();
             const pendingEvents = [];
@@ -380,7 +409,11 @@
             for (const r of rows) seen[r.id] = r;
             const uniqueRows = Object.values(seen);
 
-            if (uniqueRows.length > 0) sbUpsert('users', uniqueRows);
+            // Online ve offline ayrı batch: online olanlara last_seen ekle
+            const onlineRows = uniqueRows.filter(r => r.is_online).map(r => ({ ...r, last_seen: r.updated_at }));
+            const offlineRows = uniqueRows.filter(r => !r.is_online);
+            if (onlineRows.length > 0) sbUpsert('users', onlineRows);
+            if (offlineRows.length > 0) sbUpsert('users', offlineRows);
             if (pendingEvents.length > 0) {
                 save(KEY_SNAP, snapshot);
                 await Promise.all(pendingEvents.map(([type, data]) => fireEvent(type, data)));
