@@ -761,7 +761,7 @@
       let from = 0;
       const pageSize = 1000;
       while (true) {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=id,name,family,rank,plating,is_online,last_seen,family_role&order=name`, {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=id,name,family,rank,plating,is_online,last_seen,family_role,position&order=name`, {
           headers: {
             'apikey': SUPABASE_KEY,
             'Authorization': `Bearer ${SUPABASE_KEY}`,
@@ -1176,9 +1176,10 @@
           const roleBadge = role
             ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:${rc}22;color:${rc};border:1px solid ${rc}55;flex-shrink:0">${role}</span>`
             : '';
+          const posTag = m.position ? `<span style="font-size:9px;color:#555;margin-right:2px;font-variant-numeric:tabular-nums">#${m.position.toLocaleString()}</span>` : '';
           return `<div class="member-row">
             <span>${pCol ? shieldSVG(pCol) : ''}</span>
-            <span class="member-name">${cleanName}</span>
+            ${posTag}<span class="member-name">${cleanName}</span>
             <span class="member-title">${titleTag}${roleBadge}</span>
             <span class="member-rank">${m.rank || ''}</span>
             <span class="online-indicator" ${m.is_online ? 'data-tip="Online"' : `data-tip="${m.last_seen ? 'Last seen: ' + timeAgo(m.last_seen, 60) : 'Offline'}"`}><span class="dot ${m.is_online ? 'on' : 'off'}"></span></span>
@@ -1224,6 +1225,7 @@
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead>
           <tr style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px">
+            <th style="text-align:right;padding:8px 12px;border-bottom:1px solid var(--border);width:50px">#</th>
             <th style="text-align:left;padding:8px 12px;border-bottom:1px solid var(--border)">Name</th>
           <style>.tbl-no-select { user-select:none; -webkit-user-select:none; }</style>
             <th style="text-align:left;padding:8px 12px;border-bottom:1px solid var(--border)">Rank</th>
@@ -1247,6 +1249,7 @@
               ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${lrc}22;color:${lrc};border:1px solid ${lrc}55;margin-left:4px">${lr}</span>`
               : '';
             return `<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">
+              <td style="padding:6px 12px;text-align:right;color:${u.position ? 'var(--muted)' : 'rgba(255,255,255,0.08)'};font-size:11px;font-variant-numeric:tabular-nums">${u.position ? '#' + u.position.toLocaleString() : '—'}</td>
               <td style="padding:6px 12px;display:flex;align-items:center;gap:6px">${cleanName || '—'}<span class="online-indicator" style="display:inline-flex;width:16px;height:16px;margin-left:auto" ${u.is_online ? 'data-tip="Online"' : `data-tip="${u.last_seen ? 'Last seen: ' + timeAgo(u.last_seen, 60) : 'Offline'}"`}><span class="dot ${u.is_online ? 'on' : 'off'}"></span></span></td>
               <td style="padding:6px 12px;color:var(--muted);user-select:none;-webkit-user-select:none">${u.rank || '—'}</td>
               <td style="padding:6px 12px;user-select:none;-webkit-user-select:none">${u.family || '—'}${titleBadge}${leaderBadge}</td>

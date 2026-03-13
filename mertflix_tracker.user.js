@@ -64,8 +64,7 @@
         trackFamilies: true,
         trackOnline: true,
         trackCasinos: true,
-        trackDeadFams: true,
-        trackLeaders: true,
+        positionSync: false,
     };
     let settings = load('mf_settings_v1', DEFAULT_SETTINGS);
     settings = { ...DEFAULT_SETTINGS, ...settings };
@@ -263,7 +262,7 @@
             <div class="mf-setting-row">
                 <div class="mf-setting-info">
                     <div class="mf-setting-label">Families</div>
-                    <div class="mf-setting-desc">Track family page joins/leaves</div>
+                    <div class="mf-setting-desc">Families, leaders & dead families</div>
                 </div>
                 <label class="mf-toggle"><input type="checkbox" data-key="trackFamilies" ${settings.trackFamilies ? 'checked' : ''}><span class="mf-slider"></span></label>
             </div>
@@ -281,19 +280,21 @@
                 </div>
                 <label class="mf-toggle"><input type="checkbox" data-key="trackCasinos" ${settings.trackCasinos ? 'checked' : ''}><span class="mf-slider"></span></label>
             </div>
-            <div class="mf-setting-row">
+            <div class="mf-setting-row mf-pos-row" style="border-bottom:none;">
                 <div class="mf-setting-info">
-                    <div class="mf-setting-label">Dead Families</div>
-                    <div class="mf-setting-desc">Detect downed families from stats</div>
+                    <div class="mf-setting-label">Position Sync</div>
+                    <div class="mf-setting-desc">Fetch user positions (pauses other tracking)</div>
                 </div>
-                <label class="mf-toggle"><input type="checkbox" data-key="trackDeadFams" ${settings.trackDeadFams ? 'checked' : ''}><span class="mf-slider"></span></label>
+                <label class="mf-toggle"><input type="checkbox" data-key="positionSync" ${settings.positionSync ? 'checked' : ''}><span class="mf-slider"></span></label>
             </div>
-            <div class="mf-setting-row">
-                <div class="mf-setting-info">
-                    <div class="mf-setting-label">Family Leaders</div>
-                    <div class="mf-setting-desc">Boss/Sotto/Consig from global stats</div>
+            <div id="mf-pos-progress" style="display:none; padding:0 0 10px;">
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:#888;margin-bottom:4px;">
+                    <span id="mf-pos-label">Starting...</span>
+                    <span id="mf-pos-count">0/0</span>
                 </div>
-                <label class="mf-toggle"><input type="checkbox" data-key="trackLeaders" ${settings.trackLeaders ? 'checked' : ''}><span class="mf-slider"></span></label>
+                <div style="height:4px;background:#1e1e28;border-radius:2px;overflow:hidden;">
+                    <div id="mf-pos-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#e50914,#ff6b35);border-radius:2px;transition:width 0.3s;"></div>
+                </div>
             </div>
             <div class="mf-settings-footer">
                 <button class="mf-reset-btn" id="mf-reset">Reset Snapshot</button>
@@ -665,9 +666,9 @@
                         if (cells.length < 10) return;
                         const nameEl = cells[2]?.querySelector('a');
                         const city   = cells[11]?.textContent.trim();
-                        const boss   = settings.trackLeaders ? (cells[8]?.textContent.trim() || null) : null;
-                        const sotto  = settings.trackLeaders ? (cells[9]?.textContent.trim() || null) : null;
-                        const consig = settings.trackLeaders ? (cells[10]?.textContent.trim() || null) : null;
+                        const boss   = settings.trackFamilies ? (cells[8]?.textContent.trim() || null) : null;
+                        const sotto  = settings.trackFamilies ? (cells[9]?.textContent.trim() || null) : null;
+                        const consig = settings.trackFamilies ? (cells[10]?.textContent.trim() || null) : null;
                         if (nameEl && city) {
                             const fname = nameEl.textContent.trim();
                             const fidM = nameEl.href?.match(/fam=(\d+)/);
@@ -724,7 +725,7 @@
             } catch(e) { console.warn('[MF] family city error:', e); }
 
             // ── DEAD FAMILY PARSE ─────────────────────────────────────────
-            if (settings.trackDeadFams) try {
+            if (settings.trackFamilies) try {
                 const deadFamilies = [];
                 let foundDeadFamTable = false;
                 dDoc.querySelectorAll('table').forEach(table => {
@@ -880,16 +881,99 @@
         scheduleOnlineDots();
     }
 
+    // ── POSITION SYNC ─────────────────────────────────────────────────────
+    let positionSyncing = false;
+
+    async function runPositionSync() {
+        if (positionSyncing) return;
+        positionSyncing = true;
+
+        const progressEl = document.getElementById('mf-pos-progress');
+        const labelEl = document.getElementById('mf-pos-label');
+        const countEl2 = document.getElementById('mf-pos-count');
+        const barEl = document.getElementById('mf-pos-bar');
+        progressEl.style.display = 'block';
+
+        // Snapshot'taki tüm kullanıcıları topla
+        const users = Object.entries(snapshot).filter(([id]) => id !== '_heartbeat').map(([id, u]) => ({ id, name: u.name }));
+        const total = users.length;
+        let done = 0;
+        const posRows = [];
+
+        labelEl.textContent = 'Fetching positions...';
+        countEl2.textContent = `0/${total}`;
+        barEl.style.width = '0%';
+        dotEl.className = 'loading';
+
+        console.log(`[MF] Position sync started: ${total} users`);
+
+        // 55'erli gruplar halinde çek
+        for (let i = 0; i < users.length; i += 55) {
+            if (!settings.positionSync) { // Manuel kapatıldıysa dur
+                console.log('[MF] Position sync cancelled by user');
+                break;
+            }
+            const chunk = users.slice(i, i + 55);
+            await Promise.all(chunk.map(async (u) => {
+                try {
+                    const res = await fetch(`/user.php?idn=${u.id}&ajax=true`, {
+                        credentials: 'include',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    const html = await res.text();
+                    const m = html.match(/#(\d[\d,]*)\)/);
+                    if (m) {
+                        const pos = parseInt(m[1].replace(/,/g, ''), 10);
+                        posRows.push({ id: u.id, position: pos, updated_at: new Date().toISOString() });
+                    }
+                } catch(e) { console.warn(`[MF] pos fetch ${u.id} error:`, e); }
+                done++;
+                countEl2.textContent = `${done}/${total}`;
+                barEl.style.width = `${Math.round(done / total * 100)}%`;
+            }));
+            // Batch arası küçük bekleme
+            if (i + 55 < users.length) await new Promise(r => setTimeout(r, 500));
+        }
+
+        // Supabase'e kaydet
+        if (posRows.length > 0) {
+            labelEl.textContent = 'Saving to database...';
+            await sbUpsert('users', posRows);
+            console.log(`[MF] Position sync done: ${posRows.length}/${total} positions saved`);
+        }
+
+        // Tamamlandı — toggle'ı kapat
+        labelEl.textContent = `Done! ${posRows.length} positions synced`;
+        barEl.style.width = '100%';
+        barEl.style.background = 'linear-gradient(90deg,#4caf50,#81c784)';
+        dotEl.className = 'active';
+
+        setTimeout(() => {
+            progressEl.style.display = 'none';
+            barEl.style.background = 'linear-gradient(90deg,#e50914,#ff6b35)';
+            // Toggle'ı kapat
+            settings.positionSync = false;
+            save('mf_settings_v1', settings);
+            const posToggle = settingsEl.querySelector('input[data-key="positionSync"]');
+            if (posToggle) posToggle.checked = false;
+        }, 3000);
+
+        positionSyncing = false;
+    }
+
     // ── START ─────────────────────────────────────────────────────────────
     async function schedulePoll() {
-        // Her tick'te round-robin poll (38 aile) + pollStats (1 global_stats) = 39 istek
-        await Promise.all([poll(), pollStats()]);
-        setTimeout(schedulePoll, POLL_INTERVAL); // 60sn
+        if (settings.positionSync) {
+            await runPositionSync();
+        } else {
+            await Promise.all([poll(), pollStats()]);
+        }
+        setTimeout(schedulePoll, POLL_INTERVAL);
     }
 
     // Sekme tekrar görünür olunca hemen poll yap
     document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) { poll(); pollStats(); }
+        if (!document.hidden && !settings.positionSync) { poll(); pollStats(); }
     });
 
     // İlk çalıştırma
