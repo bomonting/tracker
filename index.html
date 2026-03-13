@@ -1155,7 +1155,7 @@
             <span class="member-name">${cleanName}</span>
             <span class="member-title">${titleTag}</span>
             <span class="member-rank">${m.rank || ''}</span>
-            <span class="online-indicator" ${!m.is_online && m.last_seen ? `data-tip="Last seen: ${timeAgo(m.last_seen)}"` : ''}><span class="dot ${m.is_online ? 'on' : 'off'}"></span></span>
+            <span class="online-indicator" ${m.is_online ? 'data-tip="Online"' : `data-tip="${m.last_seen ? 'Last seen: ' + timeAgo(m.last_seen) : 'Offline'}"`}><span class="dot ${m.is_online ? 'on' : 'off'}"></span></span>
           </div>`;
         }).join('');
 
