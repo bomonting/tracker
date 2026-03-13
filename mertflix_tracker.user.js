@@ -318,8 +318,9 @@
                     const now = new Date().toISOString();
 
                     // Online tespiti: #74bef6 = rgb(116, 190, 246)
+                    const rawStyle = a.getAttribute('style') || '';
                     const linkColor = a.style?.color?.trim() || '';
-                    const isOnline = linkColor === '#74bef6' || linkColor === 'rgb(116, 190, 246)'
+                    const isOnline = rawStyle.includes('74bef6') || rawStyle.includes('116, 190, 246')
                         || linkColor.includes('74bef6') || linkColor.includes('116, 190, 246');
 
                     const prev = snapshot[id];
