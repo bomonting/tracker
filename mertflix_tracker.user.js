@@ -320,8 +320,15 @@
                     // Online tespiti: #74bef6 = rgb(116, 190, 246)
                     const rawStyle = a.getAttribute('style') || '';
                     const linkColor = a.style?.color?.trim() || '';
+                    const parentStyle = a.parentElement?.getAttribute('style') || '';
+                    const parentColor = a.parentElement?.style?.color?.trim() || '';
                     const isOnline = rawStyle.includes('74bef6') || rawStyle.includes('116, 190, 246')
-                        || linkColor.includes('74bef6') || linkColor.includes('116, 190, 246');
+                        || linkColor.includes('74bef6') || linkColor.includes('116, 190, 246')
+                        || parentStyle.includes('74bef6') || parentColor.includes('74bef6');
+                    // DEBUG: ilk 3 kullanıcıyı logla
+                    if (seenIds.size <= 3) {
+                        console.log(`[MF DEBUG] ${name}: rawStyle="${rawStyle}" linkColor="${linkColor}" parentStyle="${parentStyle}" outerHTML="${a.outerHTML.slice(0,200)}" → isOnline=${isOnline}`);
+                    }
 
                     const prev = snapshot[id];
                     if (prev) {
