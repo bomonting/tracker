@@ -317,18 +317,8 @@
                     const plating = getPlating(shield?.parentElement);
                     const now = new Date().toISOString();
 
-                    // Online tespiti: #74bef6 = rgb(116, 190, 246)
-                    const rawStyle = a.getAttribute('style') || '';
-                    const linkColor = a.style?.color?.trim() || '';
-                    const parentStyle = a.parentElement?.getAttribute('style') || '';
-                    const parentColor = a.parentElement?.style?.color?.trim() || '';
-                    const isOnline = rawStyle.includes('74bef6') || rawStyle.includes('116, 190, 246')
-                        || linkColor.includes('74bef6') || linkColor.includes('116, 190, 246')
-                        || parentStyle.includes('74bef6') || parentColor.includes('74bef6');
-                    // DEBUG: ilk 3 kullanıcıyı logla
-                    if (seenIds.size <= 3) {
-                        console.log(`[MF DEBUG] ${name}: rawStyle="${rawStyle}" linkColor="${linkColor}" parentStyle="${parentStyle}" outerHTML="${a.outerHTML.slice(0,200)}" → isOnline=${isOnline}`);
-                    }
+                    // Online tespiti: class="text-blue" = online
+                    const isOnline = a.classList.contains('text-blue');
 
                     const prev = snapshot[id];
                     if (prev) {
@@ -627,12 +617,7 @@
             for (const a of table.querySelectorAll('a[href*="user.php?idn="]')) {
                 // Zaten dot eklenmişse atla
                 if (a.querySelector('.mf-online-dot')) continue;
-                // #74bef6 = rgb(116, 190, 246) — sitenin online rengi
-                const color = getComputedStyle(a).color;
-                const isOnline = color.includes('116, 190, 246')
-                    || (a.style.color && (a.style.color === '#74bef6' || a.style.color === 'rgb(116, 190, 246)'));
-
-                // Ayrıca link rengi kontrolü: beyaz/gri = offline
+                const isOnline = a.classList.contains('text-blue');
                 const dot = document.createElement('span');
                 dot.className = 'mf-online-dot ' + (isOnline ? 'online' : 'offline');
                 dot.title = isOnline ? 'Online' : 'Offline';
