@@ -60,6 +60,16 @@
         try { GM_setValue(key, JSON.stringify(val)); } catch {}
     }
 
+    const DEFAULT_SETTINGS = {
+        trackFamilies: true,
+        trackOnline: true,
+        trackCasinos: true,
+        trackDeadFams: true,
+        trackLeaders: true,
+    };
+    let settings = load('mf_settings_v1', DEFAULT_SETTINGS);
+    settings = { ...DEFAULT_SETTINGS, ...settings };
+
     let snapshot = load(KEY_SNAP, {}); // id -> { name, rank, family, plating }
 
     // ── SUPABASE ──────────────────────────────────────────────────────────
@@ -106,51 +116,131 @@
     const style = document.createElement('style');
     style.textContent = `
         #mf-panel {
-            position:fixed; bottom:20px; right:20px; width:320px;
-            background:rgba(10,10,12,0.97); border:1px solid #2a2a35;
-            border-radius:8px; font-family:'Courier New',monospace;
-            font-size:12px; color:#ccc; z-index:999999;
+            position:fixed; bottom:20px; right:20px; width:340px;
+            background:#0d0d10; border:1px solid #1e1e28;
+            border-radius:10px; font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif;
+            font-size:12px; color:#b8b8c0; z-index:999999;
             display:flex; flex-direction:column;
-            box-shadow:0 4px 24px rgba(0,0,0,0.8); user-select:none;
-            max-height:420px;
+            box-shadow:0 8px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(229,9,20,0.08);
+            user-select:none; max-height:460px;
+            backdrop-filter:blur(12px);
         }
+        #mf-panel.mf-minimized #mf-tab-bar,
+        #mf-panel.mf-minimized #mf-body,
+        #mf-panel.mf-minimized #mf-settings,
+        #mf-panel.mf-minimized #mf-footer { display:none !important; }
         #mf-header {
             display:flex; justify-content:space-between; align-items:center;
-            padding:8px 12px; background:rgba(229,9,20,0.15);
-            border-radius:8px 8px 0 0; border-bottom:1px solid #2a2a35;
+            padding:10px 14px; background:linear-gradient(135deg, rgba(229,9,20,0.12), rgba(229,9,20,0.04));
+            border-radius:10px 10px 0 0; border-bottom:1px solid #1e1e28;
             cursor:grab;
         }
         #mf-header:active { cursor:grabbing; }
-        #mf-title { color:#e50914; font-weight:bold; font-size:13px; letter-spacing:2px; }
-        #mf-dot { width:7px; height:7px; border-radius:50%; background:#555; display:inline-block; margin-right:6px; }
-        #mf-dot.active  { background:#4caf50; box-shadow:0 0 6px #4caf50; }
-        #mf-dot.loading { background:#ff9800; box-shadow:0 0 6px #ff9800; }
-        #mf-dot.error   { background:#e57373; box-shadow:0 0 6px #e57373; }
-        .mf-btn { background:none; border:1px solid #444; color:#888; cursor:pointer;
-            border-radius:3px; padding:1px 8px; font-size:11px; font-family:'Courier New',monospace; }
-        .mf-btn:hover { border-color:#e50914; color:#e50914; }
-        #mf-body { overflow-y:auto; padding:8px; flex:1; user-select:text; }
+        #mf-title {
+            color:#e50914; font-weight:700; font-size:13px; letter-spacing:2.5px;
+            text-transform:uppercase;
+        }
+        #mf-dot {
+            width:7px; height:7px; border-radius:50%; background:#333;
+            display:inline-block; margin-right:6px; transition:all 0.3s;
+        }
+        #mf-dot.active  { background:#4caf50; box-shadow:0 0 8px #4caf50; }
+        #mf-dot.loading { background:#ff9800; box-shadow:0 0 8px #ff9800; animation:mf-pulse 1s infinite; }
+        #mf-dot.error   { background:#e57373; box-shadow:0 0 8px #e57373; }
+        @keyframes mf-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .mf-hdr-btn {
+            background:none; border:none; color:#555; cursor:pointer;
+            font-size:15px; padding:2px 4px; transition:color 0.2s;
+            line-height:1;
+        }
+        .mf-hdr-btn:hover { color:#e50914; }
+        #mf-tab-bar {
+            display:flex; border-bottom:1px solid #1e1e28; background:rgba(0,0,0,0.3);
+        }
+        .mf-tab-btn {
+            flex:1; padding:7px 0; text-align:center; font-size:11px;
+            font-weight:600; letter-spacing:1px; text-transform:uppercase;
+            color:#555; background:none; border:none; cursor:pointer;
+            border-bottom:2px solid transparent; transition:all 0.2s;
+            font-family:inherit;
+        }
+        .mf-tab-btn:hover { color:#888; }
+        .mf-tab-btn.active { color:#e50914; border-bottom-color:#e50914; }
+        #mf-body {
+            overflow-y:auto; padding:8px 10px; flex:1; user-select:text;
+            display:block;
+        }
         #mf-body::-webkit-scrollbar { width:3px; }
-        #mf-body::-webkit-scrollbar-thumb { background:#2a2a35; }
-        .mf-entry { padding:5px 8px; margin-bottom:4px; border-radius:4px;
-            border-left:3px solid #444; background:rgba(255,255,255,0.02); line-height:1.6; }
+        #mf-body::-webkit-scrollbar-thumb { background:#1e1e28; border-radius:3px; }
+        #mf-settings {
+            overflow-y:auto; padding:12px 14px; flex:1; display:none;
+        }
+        #mf-settings::-webkit-scrollbar { width:3px; }
+        #mf-settings::-webkit-scrollbar-thumb { background:#1e1e28; border-radius:3px; }
+        .mf-setting-row {
+            display:flex; justify-content:space-between; align-items:center;
+            padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04);
+        }
+        .mf-setting-row:last-child { border-bottom:none; }
+        .mf-setting-info { flex:1; margin-right:12px; }
+        .mf-setting-label {
+            color:#ddd; font-size:12px; font-weight:600; margin-bottom:2px;
+        }
+        .mf-setting-desc {
+            color:#555; font-size:10px; line-height:1.4;
+        }
+        .mf-toggle {
+            position:relative; width:36px; height:20px; flex-shrink:0;
+        }
+        .mf-toggle input { opacity:0; width:0; height:0; position:absolute; }
+        .mf-toggle .mf-slider {
+            position:absolute; top:0; left:0; right:0; bottom:0;
+            background:#2a2a35; border-radius:10px; cursor:pointer;
+            transition:background 0.25s;
+        }
+        .mf-toggle .mf-slider::before {
+            content:''; position:absolute; width:14px; height:14px;
+            left:3px; bottom:3px; background:#555; border-radius:50%;
+            transition:all 0.25s;
+        }
+        .mf-toggle input:checked + .mf-slider { background:rgba(229,9,20,0.6); }
+        .mf-toggle input:checked + .mf-slider::before {
+            transform:translateX(16px); background:#e50914;
+            box-shadow:0 0 6px rgba(229,9,20,0.5);
+        }
+        .mf-settings-footer {
+            padding:10px 0 2px; margin-top:8px; border-top:1px solid rgba(255,255,255,0.04);
+        }
+        .mf-reset-btn {
+            width:100%; padding:7px 0; background:rgba(229,115,115,0.1);
+            border:1px solid rgba(229,115,115,0.3); color:#e57373;
+            border-radius:5px; cursor:pointer; font-size:11px;
+            font-weight:600; font-family:inherit; transition:all 0.2s;
+        }
+        .mf-reset-btn:hover { background:rgba(229,115,115,0.2); border-color:#e57373; }
+        .mf-entry {
+            padding:6px 10px; margin-bottom:4px; border-radius:5px;
+            border-left:3px solid #2a2a35; background:rgba(255,255,255,0.02);
+            line-height:1.6; font-size:11.5px;
+        }
         .mf-entry.family  { border-color:#4fc3f7; }
         .mf-entry.plating { border-color:#ce93d8; }
-        .mf-time { color:#444; font-size:10px; float:right; }
-        .mf-name { color:#fff; font-weight:bold; }
-        .mf-empty { color:#444; text-align:center; padding:20px 0; font-style:italic; font-size:11px; }
-        #mf-footer { padding:5px 10px; border-top:1px solid #1a1a1a; color:#444;
-            font-size:10px; display:flex; justify-content:space-between; }
+        .mf-time { color:#3a3a44; font-size:10px; float:right; }
+        .mf-name { color:#fff; font-weight:600; }
+        .mf-empty {
+            color:#3a3a44; text-align:center; padding:28px 0;
+            font-style:italic; font-size:11px;
+        }
+        #mf-footer {
+            padding:6px 14px; border-top:1px solid #1e1e28; color:#3a3a44;
+            font-size:10px; display:flex; justify-content:space-between;
+        }
         .mf-online-dot {
             display:inline-block; width:8px; height:8px; border-radius:50%;
             margin-right:3px; vertical-align:middle;
         }
-        .mf-online-dot.online {
-            background:#4caf50; box-shadow:0 0 4px #4caf50;
-        }
-        .mf-online-dot.offline {
-            background:#555; opacity:0.4;
-        }
+        .mf-online-dot.online { background:#4caf50; box-shadow:0 0 4px #4caf50; }
+        .mf-online-dot.offline { background:#555; opacity:0.4; }
     `;
     document.head.appendChild(style);
 
@@ -159,13 +249,56 @@
     panel.innerHTML = `
         <div id="mf-header">
             <span id="mf-title">▶ MERTFLIX</span>
-            <div style="display:flex;align-items:center;gap:6px">
+            <div style="display:flex;align-items:center;gap:8px">
                 <span id="mf-dot"></span>
-                <button class="mf-btn" id="mf-toggle">Hide</button>
-                <button class="mf-btn" id="mf-reset" style="border-color:#e57373;color:#e57373">Reset</button>
+                <button class="mf-hdr-btn" id="mf-minimize" title="Minimize">─</button>
             </div>
         </div>
+        <div id="mf-tab-bar">
+            <button class="mf-tab-btn active" data-tab="log">Log</button>
+            <button class="mf-tab-btn" data-tab="settings">Settings</button>
+        </div>
         <div id="mf-body"><div class="mf-empty">Initializing...</div></div>
+        <div id="mf-settings">
+            <div class="mf-setting-row">
+                <div class="mf-setting-info">
+                    <div class="mf-setting-label">Families</div>
+                    <div class="mf-setting-desc">Track family page joins/leaves</div>
+                </div>
+                <label class="mf-toggle"><input type="checkbox" data-key="trackFamilies" ${settings.trackFamilies ? 'checked' : ''}><span class="mf-slider"></span></label>
+            </div>
+            <div class="mf-setting-row">
+                <div class="mf-setting-info">
+                    <div class="mf-setting-label">Online Detection</div>
+                    <div class="mf-setting-desc">Services.Account online status</div>
+                </div>
+                <label class="mf-toggle"><input type="checkbox" data-key="trackOnline" ${settings.trackOnline ? 'checked' : ''}><span class="mf-slider"></span></label>
+            </div>
+            <div class="mf-setting-row">
+                <div class="mf-setting-info">
+                    <div class="mf-setting-label">Casinos</div>
+                    <div class="mf-setting-desc">Casino owner/profit/bet changes</div>
+                </div>
+                <label class="mf-toggle"><input type="checkbox" data-key="trackCasinos" ${settings.trackCasinos ? 'checked' : ''}><span class="mf-slider"></span></label>
+            </div>
+            <div class="mf-setting-row">
+                <div class="mf-setting-info">
+                    <div class="mf-setting-label">Dead Families</div>
+                    <div class="mf-setting-desc">Detect downed families from stats</div>
+                </div>
+                <label class="mf-toggle"><input type="checkbox" data-key="trackDeadFams" ${settings.trackDeadFams ? 'checked' : ''}><span class="mf-slider"></span></label>
+            </div>
+            <div class="mf-setting-row">
+                <div class="mf-setting-info">
+                    <div class="mf-setting-label">Family Leaders</div>
+                    <div class="mf-setting-desc">Boss/Sotto/Consig from global stats</div>
+                </div>
+                <label class="mf-toggle"><input type="checkbox" data-key="trackLeaders" ${settings.trackLeaders ? 'checked' : ''}><span class="mf-slider"></span></label>
+            </div>
+            <div class="mf-settings-footer">
+                <button class="mf-reset-btn" id="mf-reset">Reset Snapshot</button>
+            </div>
+        </div>
         <div id="mf-footer">
             <span id="mf-count">—</span>
             <span id="mf-last">Never synced</span>
@@ -196,14 +329,36 @@
     });
     document.addEventListener('mouseup', () => { dragging = false; });
 
-    // Toggle
-    let visible = true;
-    document.getElementById('mf-toggle').addEventListener('click', function() {
-        visible = !visible;
-        bodyEl.style.display = visible ? '' : 'none';
-        document.getElementById('mf-footer').style.display = visible ? '' : 'none';
-        this.textContent = visible ? 'Hide' : 'Show';
+    // Minimize
+    document.getElementById('mf-minimize').addEventListener('click', () => {
+        panel.classList.toggle('mf-minimized');
     });
+
+    // Tab switching
+    const settingsEl = document.getElementById('mf-settings');
+    panel.querySelectorAll('.mf-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            panel.querySelectorAll('.mf-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if (btn.dataset.tab === 'log') {
+                bodyEl.style.display = 'block';
+                settingsEl.style.display = 'none';
+            } else {
+                bodyEl.style.display = 'none';
+                settingsEl.style.display = 'block';
+            }
+        });
+    });
+
+    // Setting toggles
+    settingsEl.querySelectorAll('input[data-key]').forEach(inp => {
+        inp.addEventListener('change', () => {
+            settings[inp.dataset.key] = inp.checked;
+            save('mf_settings_v1', settings);
+        });
+    });
+
+    // Reset
     document.getElementById('mf-reset').addEventListener('click', function() {
         if (confirm("Snapshot sifirlansin mi?")) {
             snapshot = {};
@@ -426,7 +581,7 @@
             if (!famIds.length) { dotEl.className = 'active'; return; }
 
             // Önce gerçek online kullanıcıları al
-            await fetchTrueOnlineUsers();
+            if (settings.trackOnline) await fetchTrueOnlineUsers();
 
             const rows = [];
             const seenIds = new Set();
@@ -510,9 +665,9 @@
                         if (cells.length < 10) return;
                         const nameEl = cells[2]?.querySelector('a');
                         const city   = cells[11]?.textContent.trim();
-                        const boss   = cells[8]?.textContent.trim() || null;
-                        const sotto  = cells[9]?.textContent.trim() || null;
-                        const consig = cells[10]?.textContent.trim() || null;
+                        const boss   = settings.trackLeaders ? (cells[8]?.textContent.trim() || null) : null;
+                        const sotto  = settings.trackLeaders ? (cells[9]?.textContent.trim() || null) : null;
+                        const consig = settings.trackLeaders ? (cells[10]?.textContent.trim() || null) : null;
                         if (nameEl && city) {
                             const fname = nameEl.textContent.trim();
                             const fidM = nameEl.href?.match(/fam=(\d+)/);
@@ -553,7 +708,7 @@
                 knownFamNames = currentFamNames;
                 save('mf_fam_names_v1', [...currentFamNames]);
 
-                if (familyRows.length > 0) {
+                if (familyRows.length > 0 && settings.trackFamilies) {
                     await fetch(`${SUPABASE_URL}/rest/v1/families`, {
                         method: 'POST',
                         headers: {
@@ -569,7 +724,7 @@
             } catch(e) { console.warn('[MF] family city error:', e); }
 
             // ── DEAD FAMILY PARSE ─────────────────────────────────────────
-            try {
+            if (settings.trackDeadFams) try {
                 const deadFamilies = [];
                 let foundDeadFamTable = false;
                 dDoc.querySelectorAll('table').forEach(table => {
@@ -614,7 +769,7 @@
             } catch(e) { console.warn('[MF] dead family error:', e); }
 
             // ── CASINO PARSE ──────────────────────────────────────────────
-            try {
+            if (settings.trackCasinos) try {
                 const TYPE_MAP = {
                     'Blackjack Tables':   'blackjack',
                     'Number Games':       'number',
