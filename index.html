@@ -140,7 +140,7 @@
   .family-members::-webkit-scrollbar-thumb { background:var(--border); }
   .member-row {
     display:grid;
-    grid-template-columns: 14px 1fr 46px 70px;
+    grid-template-columns: 14px 1fr 46px 70px 10px;
     align-items:center; padding:5px 13px; font-size:13px;
     transition:background .1s; gap:6px;
   }
@@ -1105,9 +1105,10 @@
             : '';
           return `<div class="member-row">
             <span>${pCol ? shieldSVG(pCol) : ''}</span>
-            <span class="member-name">${m.is_online ? '<span style="color:#4caf50;font-size:7px;margin-right:4px;text-shadow:0 0 4px #4caf50">●</span>' : '<span style="color:#444;font-size:7px;margin-right:4px">●</span>'}${cleanName}</span>
+            <span class="member-name">${cleanName}</span>
             <span class="member-title">${titleTag}</span>
             <span class="member-rank">${m.rank || ''}</span>
+            <span>${m.is_online ? '<span style="color:#4caf50;font-size:8px;text-shadow:0 0 4px #4caf50">●</span>' : '<span style="color:#333;font-size:8px">●</span>'}</span>
           </div>`;
         }).join('');
 
