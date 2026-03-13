@@ -141,12 +141,25 @@
   .family-members::-webkit-scrollbar-thumb { background:var(--border); }
   .member-row {
     display:grid;
-    grid-template-columns: 14px 1fr 46px 70px 10px;
+    grid-template-columns: 14px 1fr 46px 70px 18px;
     align-items:center; padding:5px 13px; font-size:13px;
     transition:background .1s; gap:6px;
   }
   .member-row:hover { background:rgba(255,255,255,0.02); }
   .member-row > span:first-child { user-select:none; -webkit-user-select:none; }
+  .online-indicator {
+    display:flex; align-items:center; justify-content:center;
+    width:18px; height:18px; cursor:default; position:relative;
+  }
+  .online-indicator .dot { width:8px; height:8px; border-radius:50%; }
+  .online-indicator .dot.on { background:#4caf50; box-shadow:0 0 4px #4caf50; }
+  .online-indicator .dot.off { background:#555; }
+  .online-indicator[data-tip]:hover::after {
+    content:attr(data-tip); position:absolute; right:22px; top:50%;
+    transform:translateY(-50%); background:#1a1a1f; color:#aaa;
+    font-size:10px; padding:3px 7px; border-radius:4px; white-space:nowrap;
+    border:1px solid #333; z-index:10; pointer-events:none;
+  }
   .online-dot { width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:5px; vertical-align:middle; flex-shrink:0; }
   .online-dot.on  { background:#4caf50; box-shadow:0 0 4px #4caf50; }
   .online-dot.off { background:#555; }
@@ -1142,7 +1155,7 @@
             <span class="member-name">${cleanName}</span>
             <span class="member-title">${titleTag}</span>
             <span class="member-rank">${m.rank || ''}</span>
-            <span>${m.is_online ? '<span style="color:#4caf50;font-size:8px;text-shadow:0 0 4px #4caf50" title="Online">●</span>' : `<span style="color:#555;font-size:8px;cursor:help" title="${m.last_seen ? 'Last seen: ' + timeAgo(m.last_seen) : 'Offline'}">●</span>`}</span>
+            <span class="online-indicator" ${!m.is_online && m.last_seen ? `data-tip="Last seen: ${timeAgo(m.last_seen)}"` : ''}><span class="dot ${m.is_online ? 'on' : 'off'}"></span></span>
           </div>`;
         }).join('');
 
