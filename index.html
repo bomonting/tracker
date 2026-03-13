@@ -141,7 +141,7 @@
   .family-members::-webkit-scrollbar-thumb { background:var(--border); }
   .member-row {
     display:grid;
-    grid-template-columns: 14px 1fr 46px 70px 18px;
+    grid-template-columns: 14px auto 1fr 46px 70px 18px;
     align-items:center; padding:5px 13px; font-size:13px;
     transition:background .1s; gap:6px;
   }
@@ -1176,7 +1176,7 @@
           const roleBadge = role
             ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:${rc}22;color:${rc};border:1px solid ${rc}55;flex-shrink:0">${role}</span>`
             : '';
-          const posTag = m.position ? `<span style="font-size:9px;color:#555;margin-right:2px;font-variant-numeric:tabular-nums">#${m.position.toLocaleString()}</span>` : '';
+          const posTag = `<span style="font-size:9px;color:#555;font-variant-numeric:tabular-nums;min-width:0">${m.position ? '#' + m.position.toLocaleString() : ''}</span>`;
           return `<div class="member-row">
             <span>${pCol ? shieldSVG(pCol) : ''}</span>
             ${posTag}<span class="member-name">${cleanName}</span>
