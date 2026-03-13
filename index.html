@@ -709,9 +709,9 @@
   function platingColor(p) { return PLATING_COLORS[p] || null; }
   function rankIndex(r)    { const i = RANK_ORDER.indexOf(r); return i === -1 ? 99 : i; }
 
-  function timeAgo(dateStr) {
+  function timeAgo(dateStr, addMins = 0) {
     if (!dateStr) return '';
-    const diff = Date.now() - new Date(dateStr).getTime();
+    const diff = Date.now() - new Date(dateStr).getTime() + addMins * 60000;
     if (diff < 0) return 'just now';
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return 'just now';
@@ -1155,7 +1155,7 @@
             <span class="member-name">${cleanName}</span>
             <span class="member-title">${titleTag}</span>
             <span class="member-rank">${m.rank || ''}</span>
-            <span class="online-indicator" ${m.is_online ? 'data-tip="Online"' : `data-tip="${m.last_seen ? 'Last seen: ' + timeAgo(m.last_seen) : 'Offline'}"`}><span class="dot ${m.is_online ? 'on' : 'off'}"></span></span>
+            <span class="online-indicator" ${m.is_online ? 'data-tip="Online"' : `data-tip="${m.last_seen ? 'Last seen: ' + timeAgo(m.last_seen, 60) : 'Offline'}"`}><span class="dot ${m.is_online ? 'on' : 'off'}"></span></span>
           </div>`;
         }).join('');
 
@@ -1213,7 +1213,7 @@
               ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${TITLE_COLORS[title]}22;color:${TITLE_COLORS[title]};border:1px solid ${TITLE_COLORS[title]}55;margin-left:6px">${title}</span>`
               : '';
             return `<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">
-              <td style="padding:6px 12px;display:flex;align-items:center;gap:6px">${cleanName || '—'}<span class="online-indicator" style="display:inline-flex;width:16px;height:16px;margin-left:auto" ${u.is_online ? 'data-tip="Online"' : `data-tip="${u.last_seen ? 'Last seen: ' + timeAgo(u.last_seen) : 'Offline'}"`}><span class="dot ${u.is_online ? 'on' : 'off'}"></span></span></td>
+              <td style="padding:6px 12px;display:flex;align-items:center;gap:6px">${cleanName || '—'}<span class="online-indicator" style="display:inline-flex;width:16px;height:16px;margin-left:auto" ${u.is_online ? 'data-tip="Online"' : `data-tip="${u.last_seen ? 'Last seen: ' + timeAgo(u.last_seen, 60) : 'Offline'}"`}><span class="dot ${u.is_online ? 'on' : 'off'}"></span></span></td>
               <td style="padding:6px 12px;color:var(--muted);user-select:none;-webkit-user-select:none">${u.rank || '—'}</td>
               <td style="padding:6px 12px;user-select:none;-webkit-user-select:none">${u.family || '—'}${titleBadge}</td>
               <td style="padding:6px 12px;user-select:none;-webkit-user-select:none">${pCol
