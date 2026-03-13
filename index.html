@@ -137,15 +137,15 @@
   .family-members::-webkit-scrollbar-thumb { background:var(--border); }
   .member-row {
     display:grid;
-    grid-template-columns: 8px 14px 1fr 46px 70px;
+    grid-template-columns: 14px 1fr 46px 70px;
     align-items:center; padding:5px 13px; font-size:13px;
     transition:background .1s; gap:6px;
   }
   .member-row:hover { background:rgba(255,255,255,0.02); }
   .member-row > span:first-child { user-select:none; -webkit-user-select:none; }
-  .online-dot { width:7px; height:7px; border-radius:50%; display:inline-block; }
+  .online-dot { width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:5px; vertical-align:middle; flex-shrink:0; }
   .online-dot.on  { background:#4caf50; box-shadow:0 0 4px #4caf50; }
-  .online-dot.off { background:#666; opacity:0.6; }
+  .online-dot.off { background:#555; }
   .member-name { color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .member-title { display:flex; justify-content:center; user-select:none; -webkit-user-select:none; }
   .member-rank { color:var(--muted); font-size:10px; white-space:nowrap; text-align:right; user-select:none; -webkit-user-select:none; }
@@ -1101,9 +1101,8 @@
             ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${TITLE_COLORS[title]}22;color:${TITLE_COLORS[title]};border:1px solid ${TITLE_COLORS[title]}55;flex-shrink:0">${title}</span>`
             : '';
           return `<div class="member-row">
-            <span><span class="online-dot ${m.is_online ? 'on' : 'off'}" title="${m.is_online ? 'Online' : 'Offline'}"></span></span>
             <span>${pCol ? shieldSVG(pCol) : ''}</span>
-            <span class="member-name">${cleanName}</span>
+            <span class="member-name"><span class="online-dot ${m.is_online ? 'on' : 'off'}"></span>${cleanName}</span>
             <span class="member-title">${titleTag}</span>
             <span class="member-rank">${m.rank || ''}</span>
           </div>`;
