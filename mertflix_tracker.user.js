@@ -314,10 +314,12 @@
         }
     }
 
-    // ── FAMILY PAGE FETCH — sadece değişen aileler için ───────────────────
+    // ── FAMILY PAGE FETCH ────────────────────────────────────────────────
+    let familyCapos = {}; // famName -> { capoName: [memberName, ...] }
+
     async function fetchFamilyPage(famId, famName, rows, seenIds, pendingEvents) {
         try {
-            const res = await fetch(`/family.php?fam=${famId}`, {
+            const res = await fetch(`/family.php?fam=${famId}&ajax=true`, {
                 credentials: 'include',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
@@ -325,6 +327,29 @@
             const doc = new DOMParser().parseFromString(html, 'text/html');
             const userTable = [...doc.querySelectorAll('table')].find(t => t.textContent.includes('Users:'));
             if (!userTable) return;
+
+            // ── CAPOREGIMES PARSE ─────────────────────────────────────
+            const capoTable = [...doc.querySelectorAll('table')].find(t => {
+                const hdr = t.querySelector('td.tableheader');
+                return hdr && hdr.textContent.trim().includes('Caporegimes');
+            });
+            const capoMap = {}; // capoName -> Set of member names
+            if (capoTable) {
+                for (const capoLink of capoTable.querySelectorAll('td.subtableheader a.tableheader')) {
+                    const capoName = capoLink.textContent.trim();
+                    const memberTd = capoLink.closest('td').nextElementSibling;
+                    if (!memberTd) continue;
+                    const members = new Set();
+                    for (const a of memberTd.querySelectorAll('a')) {
+                        members.add(a.textContent.trim());
+                    }
+                    capoMap[capoName] = members;
+                    // Capo'nun kendisi de Capo rolüne sahip
+                    if (!capoMap._capoNames) capoMap._capoNames = new Set();
+                    capoMap._capoNames.add(capoName);
+                }
+            }
+            familyCapos[famName] = capoMap;
 
             const famSeenIds = new Set();
             for (const rankCell of userTable.querySelectorAll('td[width="145"]')) {
@@ -355,6 +380,17 @@
                         ? trueOnlineSet.has(name)
                         : a.classList.contains('text-blue');
 
+                    // Rol tespiti: capoMap'ten bak
+                    let family_role = null;
+                    if (capoMap._capoNames?.has(name)) {
+                        family_role = 'Capo';
+                    }
+                    // Services.Account'tan gelen rol (Don, Sottocapo, Consiglieri) online kullanıcılar için
+                    const svcRole = userRoles[name];
+                    if (svcRole?.family_role && svcRole.family_role !== 'Member' && svcRole.family_role !== 'Capo') {
+                        family_role = svcRole.family_role;
+                    }
+
                     const prev = snapshot[id];
                     if (prev) {
                         if (prev.family !== famName) {
@@ -369,7 +405,7 @@
                         }
                     }
                     snapshot[id] = { name, rank, family: famName, plating: plating.label, platingColor: plating.color, is_online: isOnline };
-                    rows.push({ id, name, rank, family: famName, plating: plating.label, is_online: isOnline, updated_at: now });
+                    rows.push({ id, name, rank, family: famName, plating: plating.label, is_online: isOnline, family_role, updated_at: now });
                 }
             }
 
@@ -408,11 +444,9 @@
             for (const r of rows) seen[r.id] = r;
             const uniqueRows = Object.values(seen);
 
-            // Online: last_seen = şimdi + rol bilgisi | Offline: last_seen ve rol dokunma
-            const onlineRows = uniqueRows.filter(r => r.is_online).map(r => {
-                const role = userRoles[r.name] || {};
-                return { ...r, last_seen: r.updated_at, family_role: role.family_role || null };
-            });
+            // Online: last_seen = şimdi | Offline: last_seen dokunma (korunsun)
+            // family_role her iki grupta da var (capo bilgisi sayfadan geliyor)
+            const onlineRows = uniqueRows.filter(r => r.is_online).map(r => ({ ...r, last_seen: r.updated_at }));
             const offlineRows = uniqueRows.filter(r => !r.is_online);
             if (onlineRows.length > 0) await sbUpsert('users', onlineRows);
             if (offlineRows.length > 0) await sbUpsert('users', offlineRows);
