@@ -21,7 +21,7 @@
     // ── CONFIG — değiştir ──────────────────────────────────────────────────
     const SUPABASE_URL = 'https://uabktvfytsabgudxjbxw.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_IuAEcQBBiVxVKIbR5Kg6Fg_jdCUP0IY';
-    const POLL_INTERVAL = 60 * 1000;
+    const POLL_INTERVAL = 30 * 1000; // 30 saniye
     // ──────────────────────────────────────────────────────────────────────
 
     const KEY_SNAP = 'mf_snapshot_v1';
@@ -374,11 +374,7 @@
         } catch(e) { console.warn(`[MF] family ${famId} error:`, e); }
     }
 
-    // ── ROUND-ROBIN STATE ─────────────────────────────────────────────────
-    const SLOTS_PER_TICK = 38; // dakikada 38 aile + 1 global_stats = 39 istek
-    let rrIndex = 0;            // sonraki başlangıç noktası
-
-    // ── MAIN POLL — round-robin: her tick'te 38 aile sayfası ─────────────
+    // ── MAIN POLL — 30dk'da bir tüm aileleri tara ─────────────────────────
     async function poll() {
         dotEl.className = 'loading';
         try {
@@ -390,18 +386,12 @@
             const rows = [];
             const seenIds = new Set();
             const pendingEvents = [];
-            const total = famIds.length;
 
-            // 38 slot al (wrap-around)
-            const batch = [];
-            for (let i = 0; i < Math.min(SLOTS_PER_TICK, total); i++) {
-                batch.push(famIds[(rrIndex + i) % total]);
-            }
-            rrIndex = (rrIndex + SLOTS_PER_TICK) % total;
+            console.log(`[MF] Tüm aileler taranıyor: ${famIds.length}`);
 
-            // 5'erli gruplar halinde fetch et
-            for (let i = 0; i < batch.length; i += 5) {
-                const chunk = batch.slice(i, i + 5);
+            // 5'erli gruplar halinde tüm aileleri fetch et
+            for (let i = 0; i < famIds.length; i += 5) {
+                const chunk = famIds.slice(i, i + 5);
                 await Promise.all(chunk.map(f => fetchFamilyPage(f.id, f.name, rows, seenIds, pendingEvents)));
             }
 
@@ -409,11 +399,25 @@
             for (const r of rows) seen[r.id] = r;
             const uniqueRows = Object.values(seen);
 
-            // Online ve offline ayrı batch: online olanlara last_seen ekle
+            // Online: last_seen = şimdi | Offline: last_seen dokunma (korunsun)
             const onlineRows = uniqueRows.filter(r => r.is_online).map(r => ({ ...r, last_seen: r.updated_at }));
             const offlineRows = uniqueRows.filter(r => !r.is_online);
-            if (onlineRows.length > 0) sbUpsert('users', onlineRows);
-            if (offlineRows.length > 0) sbUpsert('users', offlineRows);
+            if (onlineRows.length > 0) await sbUpsert('users', onlineRows);
+            if (offlineRows.length > 0) await sbUpsert('users', offlineRows);
+
+            // Yeni eklenen offline kullanıcıların last_seen'i null olur — otomatik doldur
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/users?last_seen=is.null&id=neq._heartbeat`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ last_seen: new Date(Date.now() - 60 * 60 * 1000).toISOString() })
+                });
+            } catch(e) { console.warn('[MF] last_seen backfill error:', e); }
             if (pendingEvents.length > 0) {
                 save(KEY_SNAP, snapshot);
                 await Promise.all(pendingEvents.map(([type, data]) => fireEvent(type, data)));
@@ -460,10 +464,13 @@
                         if (cells.length < 10) return;
                         const nameEl = cells[2]?.querySelector('a');
                         const city   = cells[11]?.textContent.trim();
+                        const boss   = cells[8]?.textContent.trim() || null;
+                        const sotto  = cells[9]?.textContent.trim() || null;
+                        const consig = cells[10]?.textContent.trim() || null;
                         if (nameEl && city) {
                             const fname = nameEl.textContent.trim();
                             const fidM = nameEl.href?.match(/fam=(\d+)/);
-                            familyRows.push({ name: fname, city, updated_at: new Date().toISOString() });
+                            familyRows.push({ name: fname, city, boss, sotto, consig, updated_at: new Date().toISOString() });
                             currentFamNames.add(fname);
                             if (fidM && !newFamIds.find(f => f.id === fidM[1])) {
                                 newFamIds.push({ id: fidM[1], name: fname, city });

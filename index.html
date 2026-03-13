@@ -741,17 +741,22 @@
 
   // ── LOAD USERS ────────────────────────────────────────────────────────────
   let familyCities = {};
+  let familyLeaders = {};
 
   async function loadUsers() {
     try {
       // Load family cities
       try {
-        const fcRes = await fetch(`${SUPABASE_URL}/rest/v1/families?select=name,city`, {
+        const fcRes = await fetch(`${SUPABASE_URL}/rest/v1/families?select=name,city,boss,sotto,consig`, {
           headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
         });
         const fcData = await fcRes.json();
-        if (Array.isArray(fcData)) fcData.forEach(f => { familyCities[f.name] = f.city; });
-      } catch(e) {}
+        if (Array.isArray(fcData)) fcData.forEach(f => {
+          familyCities[f.name] = f.city;
+          familyLeaders[f.name] = { boss: f.boss, sotto: f.sotto, consig: f.consig };
+        });
+        console.log('[DEBUG] familyLeaders:', JSON.stringify(familyLeaders['Resistance']));
+      } catch(e) { console.error('[DEBUG] families fetch error:', e); }
 
       let all = [];
       let from = 0;
@@ -1161,12 +1166,20 @@
 
       const card = document.createElement('div');
       card.className = 'family-card';
+      const leaders = familyLeaders[fam] || {};
+      const leaderTags = [
+        leaders.boss   ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#8B5E3C22;color:#8B5E3C;border:1px solid #8B5E3C55">Boss: ${leaders.boss}</span>` : '',
+        leaders.sotto  ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#c9a84c22;color:#c9a84c;border:1px solid #c9a84c55">Sotto: ${leaders.sotto}</span>` : '',
+        leaders.consig ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#c9a84c22;color:#c9a84c;border:1px solid #c9a84c55">Consig: ${leaders.consig}</span>` : '',
+      ].filter(Boolean).join('');
+
       card.innerHTML = `
         <div class="family-header">
           <span class="family-name">${fam}</span>
           ${familyCities[fam] ? `<span style="font-size:9px;color:#555;margin-right:6px;letter-spacing:0.5px;text-transform:uppercase">${familyCities[fam]}</span>` : ''}
           <span class="family-count">${members.length} members</span>
         </div>
+        ${leaderTags ? `<div style="padding:2px 12px 0;display:flex;gap:4px;flex-wrap:wrap">${leaderTags}</div>` : ''}
         <div class="family-plating-bar">${platingBar}</div>
         ${rankBar ? `<div style="padding:4px 12px 6px;font-size:10px;display:flex;gap:10px;flex-wrap:wrap">${rankBar}</div>` : ''}
         <div class="family-members" data-fam="${fam}">${memberRows}</div>
@@ -1212,10 +1225,15 @@
             const titleBadge = title
               ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${TITLE_COLORS[title]}22;color:${TITLE_COLORS[title]};border:1px solid ${TITLE_COLORS[title]}55;margin-left:6px">${title}</span>`
               : '';
+            const fl = familyLeaders[u.family] || {};
+            const leaderRole = fl.boss === cleanName ? 'Boss' : fl.sotto === cleanName ? 'Sotto' : fl.consig === cleanName ? 'Consig' : null;
+            const leaderBadge = leaderRole
+              ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#8B5E3C22;color:#8B5E3C;border:1px solid #8B5E3C55;margin-left:4px">${leaderRole}</span>`
+              : '';
             return `<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">
               <td style="padding:6px 12px;display:flex;align-items:center;gap:6px">${cleanName || '—'}<span class="online-indicator" style="display:inline-flex;width:16px;height:16px;margin-left:auto" ${u.is_online ? 'data-tip="Online"' : `data-tip="${u.last_seen ? 'Last seen: ' + timeAgo(u.last_seen, 60) : 'Offline'}"`}><span class="dot ${u.is_online ? 'on' : 'off'}"></span></span></td>
               <td style="padding:6px 12px;color:var(--muted);user-select:none;-webkit-user-select:none">${u.rank || '—'}</td>
-              <td style="padding:6px 12px;user-select:none;-webkit-user-select:none">${u.family || '—'}${titleBadge}</td>
+              <td style="padding:6px 12px;user-select:none;-webkit-user-select:none">${u.family || '—'}${titleBadge}${leaderBadge}</td>
               <td style="padding:6px 12px;user-select:none;-webkit-user-select:none">${pCol
                 ? `${shieldSVG(pCol)}<span style="color:${pCol};margin-left:5px">${u.plating}</span>`
                 : `<span style="color:var(--muted)">None</span>`}</td>
