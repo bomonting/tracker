@@ -558,6 +558,8 @@
         </select>
       </div>
 
+      <button class="filter-btn" id="online-filter-btn" onclick="toggleOnlineFilter()">All</button>
+
       <div class="stats-bar" style="margin:0 0 0 8px">
         <span><strong id="stat-families">0</strong> Families</span>
       </div>
@@ -683,6 +685,7 @@
   let currentView    = 'families';
   let currentPlating = 'All';
   let currentCity    = '';
+  let onlineFilter   = 'all'; // 'all', 'online', 'offline'
 
 
   function platingColor(p) { return PLATING_COLORS[p] || null; }
@@ -848,6 +851,14 @@
     applyFilters();
   }
 
+  function toggleOnlineFilter() {
+    const btn = document.getElementById('online-filter-btn');
+    if (onlineFilter === 'all') { onlineFilter = 'online'; btn.textContent = 'Online'; btn.classList.add('active'); btn.style.borderColor='#4caf50'; btn.style.color='#4caf50'; }
+    else if (onlineFilter === 'online') { onlineFilter = 'offline'; btn.textContent = 'Offline'; btn.style.borderColor='#e57373'; btn.style.color='#e57373'; }
+    else { onlineFilter = 'all'; btn.textContent = 'All'; btn.classList.remove('active'); btn.style.borderColor=''; btn.style.color=''; }
+    applyFilters();
+  }
+
   function resetFilters() {
     document.getElementById('search').value = '';
     document.getElementById('family-select').value = '';
@@ -858,6 +869,9 @@
     currentPlating = 'All';
     document.querySelectorAll('.plating-pill').forEach(b => b.classList.remove('active'));
     document.querySelector('[data-plating="All"]').classList.add('active');
+    onlineFilter = 'all';
+    const obtn = document.getElementById('online-filter-btn');
+    obtn.textContent = 'All'; obtn.classList.remove('active'); obtn.style.borderColor=''; obtn.style.color='';
     applyFilters();
   }
 
@@ -875,6 +889,8 @@
     if (selCity) filtered = filtered.filter(u => familyCities[u.family] === selCity);
     if (selRank) filtered = filtered.filter(u => u.rank === selRank);
     if (currentPlating !== 'All') filtered = filtered.filter(u => (u.plating || 'None') === currentPlating);
+    if (onlineFilter === 'online')  filtered = filtered.filter(u => u.is_online === true);
+    if (onlineFilter === 'offline') filtered = filtered.filter(u => !u.is_online);
 
     if (currentView === 'families') renderFamilies(filtered);
     else if (currentView === 'war') renderWar();
