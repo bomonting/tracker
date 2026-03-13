@@ -761,7 +761,7 @@
       let from = 0;
       const pageSize = 1000;
       while (true) {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=id,name,family,rank,plating,is_online,last_seen&order=name`, {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=id,name,family,rank,plating,is_online,last_seen,family_role&order=name`, {
           headers: {
             'apikey': SUPABASE_KEY,
             'Authorization': `Bearer ${SUPABASE_KEY}`,
@@ -1143,24 +1143,23 @@
       }
 
       const fl = familyLeaders[fam] || {};
-      const ROLE_COLORS = { Boss: '#f0c040', Sotto: '#b8960c', Consig: '#b8960c' };
-      function leaderRole(cleanName) {
+      const ROLE_MAP = { 'Don': 'Boss', 'Sottocapo': 'Sotto', 'Consiglieri': 'Consig', 'Capo': 'Capo' };
+      const ROLE_COLORS = { Boss: '#f0c040', Sotto: '#b8960c', Consig: '#b8960c', Capo: '#8B5E3C' };
+      const ROLE_PRIORITY = { Boss: 0, Consig: 1, Sotto: 2, Capo: 3 };
+      function memberRole(m) {
+        const cleanName = extractTitle(m.name).cleanName;
+        // Stats sayfasından gelen lider bilgisi öncelikli
         if (fl.boss === cleanName) return 'Boss';
         if (fl.consig === cleanName) return 'Consig';
         if (fl.sotto === cleanName) return 'Sotto';
+        // Services.Account'tan gelen family_role
+        if (m.family_role && ROLE_MAP[m.family_role]) return ROLE_MAP[m.family_role];
         return null;
-      }
-      function rolePriority(cleanName) {
-        const r = leaderRole(cleanName);
-        if (r === 'Boss') return 0;
-        if (r === 'Consig') return 1;
-        if (r === 'Sotto') return 2;
-        return 3;
       }
 
       const memberRows = [...members]
         .sort((a,b) => {
-          const rp = rolePriority(extractTitle(a.name).cleanName) - rolePriority(extractTitle(b.name).cleanName);
+          const rp = (ROLE_PRIORITY[memberRole(a)] ?? 99) - (ROLE_PRIORITY[memberRole(b)] ?? 99);
           if (rp !== 0) return rp;
           const tp = titlePriority(a.name) - titlePriority(b.name);
           if (tp !== 0) return tp;
@@ -1172,7 +1171,7 @@
           const titleTag = title
             ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${TITLE_COLORS[title]}22;color:${TITLE_COLORS[title]};border:1px solid ${TITLE_COLORS[title]}55;flex-shrink:0">${title}</span>`
             : '';
-          const role = leaderRole(cleanName);
+          const role = memberRole(m);
           const rc = ROLE_COLORS[role];
           const roleBadge = role
             ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:${rc}22;color:${rc};border:1px solid ${rc}55;flex-shrink:0">${role}</span>`
@@ -1240,9 +1239,12 @@
               ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${TITLE_COLORS[title]}22;color:${TITLE_COLORS[title]};border:1px solid ${TITLE_COLORS[title]}55;margin-left:6px">${title}</span>`
               : '';
             const fl = familyLeaders[u.family] || {};
-            const leaderRole = fl.boss === cleanName ? 'Boss' : fl.sotto === cleanName ? 'Sotto' : fl.consig === cleanName ? 'Consig' : null;
-            const leaderBadge = leaderRole
-              ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#8B5E3C22;color:#8B5E3C;border:1px solid #8B5E3C55;margin-left:4px">${leaderRole}</span>`
+            const RM = { 'Don': 'Boss', 'Sottocapo': 'Sotto', 'Consiglieri': 'Consig', 'Capo': 'Capo' };
+            const RC = { Boss: '#f0c040', Sotto: '#b8960c', Consig: '#b8960c', Capo: '#8B5E3C' };
+            const lr = fl.boss === cleanName ? 'Boss' : fl.consig === cleanName ? 'Consig' : fl.sotto === cleanName ? 'Sotto' : (u.family_role && RM[u.family_role]) ? RM[u.family_role] : null;
+            const lrc = RC[lr];
+            const leaderBadge = lr
+              ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${lrc}22;color:${lrc};border:1px solid ${lrc}55;margin-left:4px">${lr}</span>`
               : '';
             return `<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">
               <td style="padding:6px 12px;display:flex;align-items:center;gap:6px">${cleanName || '—'}<span class="online-indicator" style="display:inline-flex;width:16px;height:16px;margin-left:auto" ${u.is_online ? 'data-tip="Online"' : `data-tip="${u.last_seen ? 'Last seen: ' + timeAgo(u.last_seen, 60) : 'Offline'}"`}><span class="dot ${u.is_online ? 'on' : 'off'}"></span></span></td>

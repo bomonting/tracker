@@ -283,6 +283,7 @@
 
     // ── TRUE ONLINE DETECTION (chat autocomplete endpoint) ────────────────
     let trueOnlineSet = new Set(); // son 60dk aktif kullanıcılar
+    let userRoles = {}; // name -> { family_role, capo_name }
 
     async function fetchTrueOnlineUsers() {
         try {
@@ -293,12 +294,20 @@
             const data = await res.json();
 
             const names = new Set();
+            const roles = {};
             const users = data.data?.users || [];
             for (const u of users) {
-                if (u.name) names.add(u.name.trim());
+                if (u.name) {
+                    const n = u.name.trim();
+                    names.add(n);
+                    if (u.family?.role) {
+                        roles[n] = { family_role: u.family.role, capo_name: u.family.capo_name || null };
+                    }
+                }
             }
             console.log('[MF] True online users:', names.size);
             trueOnlineSet = names;
+            userRoles = roles;
         } catch(e) {
             console.warn('[MF] Services.Account error:', e);
             // Hata durumunda eski set'i koru, temizleme
@@ -399,8 +408,11 @@
             for (const r of rows) seen[r.id] = r;
             const uniqueRows = Object.values(seen);
 
-            // Online: last_seen = şimdi | Offline: last_seen dokunma (korunsun)
-            const onlineRows = uniqueRows.filter(r => r.is_online).map(r => ({ ...r, last_seen: r.updated_at }));
+            // Online: last_seen = şimdi + rol bilgisi | Offline: last_seen ve rol dokunma
+            const onlineRows = uniqueRows.filter(r => r.is_online).map(r => {
+                const role = userRoles[r.name] || {};
+                return { ...r, last_seen: r.updated_at, family_role: role.family_role || null, capo_name: role.capo_name || null };
+            });
             const offlineRows = uniqueRows.filter(r => !r.is_online);
             if (onlineRows.length > 0) await sbUpsert('users', onlineRows);
             if (offlineRows.length > 0) await sbUpsert('users', offlineRows);
