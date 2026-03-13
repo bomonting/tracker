@@ -755,8 +755,7 @@
           familyCities[f.name] = f.city;
           familyLeaders[f.name] = { boss: f.boss, sotto: f.sotto, consig: f.consig };
         });
-        console.log('[DEBUG] familyLeaders:', JSON.stringify(familyLeaders['Resistance']));
-      } catch(e) { console.error('[DEBUG] families fetch error:', e); }
+      } catch(e) {}
 
       let all = [];
       let from = 0;
@@ -1155,10 +1154,15 @@
           const titleTag = title
             ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${TITLE_COLORS[title]}22;color:${TITLE_COLORS[title]};border:1px solid ${TITLE_COLORS[title]}55;flex-shrink:0">${title}</span>`
             : '';
+          const fl = familyLeaders[fam] || {};
+          const role = fl.boss === cleanName ? 'Boss' : fl.sotto === cleanName ? 'Sotto' : fl.consig === cleanName ? 'Consig' : null;
+          const roleBadge = role
+            ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:#e5091422;color:#e50914;border:1px solid #e5091455;flex-shrink:0">${role}</span>`
+            : '';
           return `<div class="member-row">
             <span>${pCol ? shieldSVG(pCol) : ''}</span>
             <span class="member-name">${cleanName}</span>
-            <span class="member-title">${titleTag}</span>
+            <span class="member-title">${titleTag}${roleBadge}</span>
             <span class="member-rank">${m.rank || ''}</span>
             <span class="online-indicator" ${m.is_online ? 'data-tip="Online"' : `data-tip="${m.last_seen ? 'Last seen: ' + timeAgo(m.last_seen, 60) : 'Offline'}"`}><span class="dot ${m.is_online ? 'on' : 'off'}"></span></span>
           </div>`;
@@ -1166,20 +1170,12 @@
 
       const card = document.createElement('div');
       card.className = 'family-card';
-      const leaders = familyLeaders[fam] || {};
-      const leaderTags = [
-        leaders.boss   ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#8B5E3C22;color:#8B5E3C;border:1px solid #8B5E3C55">Boss: ${leaders.boss}</span>` : '',
-        leaders.sotto  ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#c9a84c22;color:#c9a84c;border:1px solid #c9a84c55">Sotto: ${leaders.sotto}</span>` : '',
-        leaders.consig ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#c9a84c22;color:#c9a84c;border:1px solid #c9a84c55">Consig: ${leaders.consig}</span>` : '',
-      ].filter(Boolean).join('');
-
       card.innerHTML = `
         <div class="family-header">
           <span class="family-name">${fam}</span>
           ${familyCities[fam] ? `<span style="font-size:9px;color:#555;margin-right:6px;letter-spacing:0.5px;text-transform:uppercase">${familyCities[fam]}</span>` : ''}
           <span class="family-count">${members.length} members</span>
         </div>
-        ${leaderTags ? `<div style="padding:2px 12px 0;display:flex;gap:4px;flex-wrap:wrap">${leaderTags}</div>` : ''}
         <div class="family-plating-bar">${platingBar}</div>
         ${rankBar ? `<div style="padding:4px 12px 6px;font-size:10px;display:flex;gap:10px;flex-wrap:wrap">${rankBar}</div>` : ''}
         <div class="family-members" data-fam="${fam}">${memberRows}</div>
