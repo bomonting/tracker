@@ -411,7 +411,7 @@
             // Online: last_seen = şimdi + rol bilgisi | Offline: last_seen ve rol dokunma
             const onlineRows = uniqueRows.filter(r => r.is_online).map(r => {
                 const role = userRoles[r.name] || {};
-                return { ...r, last_seen: r.updated_at, family_role: role.family_role || null, capo_name: role.capo_name || null };
+                return { ...r, last_seen: r.updated_at, family_role: role.family_role || null };
             });
             const offlineRows = uniqueRows.filter(r => !r.is_online);
             if (onlineRows.length > 0) await sbUpsert('users', onlineRows);
